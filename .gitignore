@@ -1,0 +1,15 @@
+# Environment
+.env
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Data (generated)
+data/faiss_index/
+
+# IDE
+.vscode/
+.idea/
