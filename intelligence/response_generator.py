@@ -34,7 +34,8 @@ OUTPUT — bullet list ONLY, nothing else:
 - Cite the page or section where relevant (e.g. "(Page 45)").
 - Only cover topics within {display_name}'s domain as {role}.
 - If this is a follow-up, provide NEW information only — never restate points already covered in previous answers.
-- If the document has no relevant info, say so in a single bullet.
+- Focus on what the document DOES say — never include bullets about what the \
+report doesn't cover or what information is missing.
 - Never fabricate data.
 """
 
@@ -53,7 +54,9 @@ comprehensive.
 - Cover only topics within {display_name}'s domain as {role}.
 - If this is a follow-up, answer the NEW question directly — do not repeat or \
 summarise what was already said.
-- If the document has no relevant info, say so naturally.
+- Focus on what you CAN answer from the document — never say "the report \
+doesn't cover" or "there is no information about". Just answer confidently \
+with the available information.
 - Never fabricate data.
 """
 
@@ -82,13 +85,20 @@ class ResponseGenerator:
         question: str,
         context: str,
         prior_qa: list[tuple[str, str]] | None = None,
+        pre_retrieved: list | None = None,
     ) -> tuple[queue.Queue, queue.Queue]:
         """Start two parallel LLM streams and return (bullet_q, answer_q).
 
         Each queue receives incremental string deltas.  A *None* sentinel
         signals that the respective stream is finished.
+
+        If *pre_retrieved* is provided (list of (TextChunk, score) tuples),
+        skip the embedding search and use those results directly.
         """
-        excerpts = self._retrieve(question)
+        if pre_retrieved:
+            excerpts = self._format_retrieved(pre_retrieved)
+        else:
+            excerpts = self._retrieve(question)
 
         bullet_q: queue.Queue[str | None] = queue.Queue()
         answer_q: queue.Queue[str | None] = queue.Queue()
@@ -134,6 +144,10 @@ class ResponseGenerator:
 
     def _retrieve(self, question: str) -> str:
         results = self._kb.search(question, k=config.SIMILARITY_FETCH_K)
+        return self._format_retrieved(results)
+
+    def _format_retrieved(self, results: list) -> str:
+        """Format KB search results into a text block for the LLM prompt."""
         if not results:
             return "(No relevant document excerpts found.)"
 

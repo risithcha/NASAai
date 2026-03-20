@@ -5,12 +5,15 @@ from remote speakers, runs RAG + LLM, and emits suggested responses.
 
 from __future__ import annotations
 
+import json
 import logging
 import queue
 import threading
 import time
 from dataclasses import dataclass, field
 from typing import Callable
+
+from openai import OpenAI
 
 import config
 from accounts.user_profile import UserProfile
@@ -53,6 +56,7 @@ class Pipeline:
         on_response: ResponseCallback | None = None,
     ) -> None:
         self._store = store
+        self._kb = kb
         self._detector = QuestionDetector()
         self._generator = ResponseGenerator(kb, user_profile)
         self._profile = user_profile
@@ -65,6 +69,10 @@ class Pipeline:
         self._last_question_time: float = 0.0
         self._question_counter: int = 0
         self._qa_history: list[tuple[str, str]] = []  # (question, response) pairs
+        self._oai = OpenAI(api_key=config.OPENAI_API_KEY)
+
+        # Pre-build the team roster summary used by LLM routing
+        self._team_summary = self._build_team_summary()
 
     # ── public API ────────────────────────────────────────────────────
 
@@ -87,9 +95,15 @@ class Pipeline:
 
     def _on_segment(self, seg: TranscriptSegment) -> None:
         """Called by TranscriptStore on every new segment."""
-        # Only analyse complete utterances from remote speakers
-        if not seg.is_utterance_end or seg.channel == 1:
+        # Log every segment for debugging
+        if seg.channel == 1:
+            log.debug("SEG DROP (mic/ch1): [%s] %s", seg.speaker, seg.text[:80])
             return
+        if not seg.is_utterance_end:
+            log.debug("SEG DROP (not utterance_end): [%s] %s", seg.speaker, seg.text[:80])
+            return
+        log.info("SEG QUEUED: ch=%d spk=%s utt_end=%s | %s",
+                 seg.channel, seg.speaker, seg.is_utterance_end, seg.text[:100])
         with self._lock:
             self._queue.append(seg)
 
@@ -112,100 +126,279 @@ class Pipeline:
     def _process(self, seg: TranscriptSegment) -> None:
         # Debounce: skip if we just handled a question
         now = time.time()
-        if now - self._last_question_time < config.QUESTION_DEBOUNCE_SEC:
+        elapsed = now - self._last_question_time
+        if elapsed < config.QUESTION_DEBOUNCE_SEC:
+            log.debug("DEBOUNCE: skipping (%.1fs < %.1fs) | %s",
+                      elapsed, config.QUESTION_DEBOUNCE_SEC, seg.text[:80])
             return
 
         context = self._store.recent_text(seconds=30)
+        log.debug("DETECT START: %s", seg.text[:100])
         detected = self._detector.detect(seg.text, context)
         if detected is None:
+            log.debug("DETECT MISS: not a question | %s", seg.text[:80])
             return
 
-        log.info("Question detected: %s", detected.question_text)
+        log.info("QUESTION DETECTED (conf=%.2f): %s",
+                 detected.confidence, detected.question_text[:120])
         self._last_question_time = time.time()
 
-        # Question routing: check if this question belongs to another user
-        redirect, hint = self._route_question(detected.question_text)
+        # Pre-fetch KB results once — shared by routing and response generation
+        kb_results = []
+        try:
+            kb_results = self._kb.search(
+                detected.question_text, k=config.SIMILARITY_FETCH_K,
+            )
+        except Exception:
+            log.debug("KB pre-fetch failed", exc_info=True)
+
         self._question_counter += 1
         qid = self._question_counter
-        if redirect and self._on_response:
-            self._on_response(SuggestedResponse(
-                question=detected.question_text,
-                question_id=qid,
-                redirect_to=redirect,
-            ))
-            return
 
-        # Dual-stream the response (bullets + answer in parallel)
+        # Start routing + response generation in PARALLEL.
+        # Routing runs on its own thread; response starts immediately
+        # with hint=None.  When routing finishes, hint is injected into
+        # subsequent streaming emissions.
+        routing_result: dict = {"hint": None, "done": False}
+
+        def _route_async() -> None:
+            try:
+                redirect, hint = self._smart_route_question(
+                    detected.question_text, kb_results=kb_results,
+                )
+                if redirect:
+                    log.info("ROUTE → REDIRECT qid=%d to %s (still answering)", qid, redirect)
+                    routing_result["hint"] = redirect
+                elif hint:
+                    log.info("ROUTE → HINT qid=%d hint=%s", qid, hint)
+                    routing_result["hint"] = hint
+                else:
+                    log.info("ROUTE → MINE qid=%d", qid)
+            except Exception:
+                log.warning("Routing failed", exc_info=True)
+            finally:
+                routing_result["done"] = True
+
+        threading.Thread(target=_route_async, daemon=True).start()
+
+        # Fire off streaming immediately (don't wait for routing)
         if self._on_response:
-            # Placeholder: streaming started
+            t = threading.Thread(
+                target=self._stream_response,
+                args=(detected, context, qid, routing_result, kb_results),
+                daemon=True,
+            )
+            t.start()
+
+    def _stream_response(
+        self,
+        detected: DetectedQuestion,
+        context: str,
+        qid: int,
+        routing_result: dict,
+        kb_results: list,
+    ) -> None:
+        """Run the dual-stream LLM response on its own thread."""
+        stream_start = time.time()
+        log.info("STREAM START qid=%d", qid)
+
+        # Placeholder: streaming started (hint may arrive later from routing)
+        self._on_response(SuggestedResponse(
+            question=detected.question_text,
+            question_id=qid,
+            is_streaming=True,
+            hint_to=routing_result.get("hint"),
+        ))
+
+        with self._lock:
+            prior = self._qa_history[-config.QA_HISTORY_DEPTH:] if self._qa_history else None
+
+        bullet_q, answer_q = self._generator.generate_dual_stream(
+            detected.question_text, context, prior_qa=prior,
+            pre_retrieved=kb_results,
+        )
+
+        full_bullets: list[str] = []
+        full_answer: list[str] = []
+        bullets_done = False
+        answer_done = False
+
+        while not (bullets_done and answer_done):
+            # Drain bullet queue
+            while not bullets_done:
+                try:
+                    chunk = bullet_q.get_nowait()
+                except queue.Empty:
+                    break
+                if chunk is None:
+                    bullets_done = True
+                else:
+                    full_bullets.append(chunk)
+            # Drain answer queue
+            while not answer_done:
+                try:
+                    chunk = answer_q.get_nowait()
+                except queue.Empty:
+                    break
+                if chunk is None:
+                    answer_done = True
+                else:
+                    full_answer.append(chunk)
+
             self._on_response(SuggestedResponse(
                 question=detected.question_text,
+                bullets="".join(full_bullets),
+                answer="".join(full_answer),
                 question_id=qid,
                 is_streaming=True,
-                hint_to=hint,
+                hint_to=routing_result.get("hint"),
             ))
+            if not (bullets_done and answer_done):
+                time.sleep(0.05)
 
-            prior = self._qa_history[-config.QA_HISTORY_DEPTH:] if self._qa_history else None
-            bullet_q, answer_q = self._generator.generate_dual_stream(
-                detected.question_text, context, prior_qa=prior,
-            )
+        # Final emission
+        bullets_text = "".join(full_bullets)
+        answer_text = "".join(full_answer)
+        self._on_response(SuggestedResponse(
+            question=detected.question_text,
+            bullets=bullets_text,
+            answer=answer_text,
+            question_id=qid,
+            is_streaming=False,
+            hint_to=routing_result.get("hint"),
+        ))
 
-            full_bullets: list[str] = []
-            full_answer: list[str] = []
-            bullets_done = False
-            answer_done = False
-
-            while not (bullets_done and answer_done):
-                # Drain bullet queue
-                while not bullets_done:
-                    try:
-                        chunk = bullet_q.get_nowait()
-                    except queue.Empty:
-                        break
-                    if chunk is None:
-                        bullets_done = True
-                    else:
-                        full_bullets.append(chunk)
-                # Drain answer queue
-                while not answer_done:
-                    try:
-                        chunk = answer_q.get_nowait()
-                    except queue.Empty:
-                        break
-                    if chunk is None:
-                        answer_done = True
-                    else:
-                        full_answer.append(chunk)
-
-                self._on_response(SuggestedResponse(
-                    question=detected.question_text,
-                    bullets="".join(full_bullets),
-                    answer="".join(full_answer),
-                    question_id=qid,
-                    is_streaming=True,
-                    hint_to=hint,
-                ))
-                if not (bullets_done and answer_done):
-                    time.sleep(0.05)
-
-            # Final emission
-            bullets_text = "".join(full_bullets)
-            answer_text = "".join(full_answer)
-            self._on_response(SuggestedResponse(
-                question=detected.question_text,
-                bullets=bullets_text,
-                answer=answer_text,
-                question_id=qid,
-                is_streaming=False,
-                hint_to=hint,
-            ))
-
-            # Store for conversation continuity (answer only — bullets are ephemeral)
+        # Store for conversation continuity (answer only — bullets are ephemeral)
+        with self._lock:
             self._qa_history.append((detected.question_text, answer_text))
 
-    # ── question routing ──────────────────────────────────────────────
+        duration = time.time() - stream_start
+        log.info("STREAM END qid=%d  %.1fs  bullets=%d chars  answer=%d chars",
+                 qid, duration, len(bullets_text), len(answer_text))
 
-    def _route_question(self, question: str) -> tuple[str | None, str | None]:
+    # ── team summary builder ──────────────────────────────────────────
+
+    def _build_team_summary(self) -> str:
+        """Build a compact one-liner-per-member summary for LLM routing."""
+        lines: list[str] = []
+        for uname, p in self._all_profiles.items():
+            keywords_preview = ", ".join(p.owned_keywords[:15])
+            lines.append(
+                f"- {uname} | {p.display_name} | {p.role} | "
+                f"expertise: {p.expertise[:120]}… | "
+                f"keywords: {keywords_preview}"
+            )
+        return "\n".join(lines)
+
+    # ── question routing (smart: LLM primary, keyword fallback) ───────
+
+    def _smart_route_question(
+        self, question: str,
+        kb_results: list | None = None,
+    ) -> tuple[str | None, str | None]:
+        """Route using LLM first; fall back to keyword scoring on failure."""
+        if len(self._all_profiles) < 2:
+            return None, None
+        try:
+            return self._llm_route_question(question, kb_results=kb_results)
+        except Exception:
+            log.warning("LLM routing failed — falling back to keyword routing",
+                        exc_info=True)
+            return self._keyword_route_question(question)
+
+    # ── LLM-based routing ─────────────────────────────────────────────
+
+    def _llm_route_question(
+        self, question: str,
+        kb_results: list | None = None,
+    ) -> tuple[str | None, str | None]:
+        """Use GPT-4o-mini to semantically classify who should answer.
+
+        Queries the knowledge base for relevant chunks to give the LLM
+        grounded context about each team member's actual responsibilities.
+
+        Returns ``(redirect_to, hint_to)`` matching the existing 3-tier interface.
+        """
+        my_uname = self._profile.username
+
+        # Use pre-fetched KB results if available; otherwise fetch fresh
+        kb_context = ""
+        try:
+            results = kb_results if kb_results else self._kb.search(question, k=3)
+            if results:
+                snippets = [chunk.text[:200] for chunk, _score in results[:3]]
+                kb_context = (
+                    "\n\nRelevant project documentation excerpts:\n"
+                    + "\n---\n".join(snippets)
+                )
+        except Exception:
+            log.debug("KB search for routing failed", exc_info=True)
+
+        system = (
+            "You are a meeting routing assistant. Given a question asked during a "
+            "NASA UAS design review and a list of team members with their roles and "
+            "expertise, determine which team member the question is MOST directed at.\n\n"
+            "Team members:\n"
+            f"{self._team_summary}\n"
+            f"{kb_context}\n\n"
+            "Rules:\n"
+            "- If the question clearly belongs to one member's domain, return their username.\n"
+            "- If it is a general/shared question not specific to any one domain, return \"generic\".\n"
+            "- Transcription may contain garbled words (e.g. \"Pixalk\" = \"Pixhawk\", "
+            "\"GST\" = \"GSD\", \"Residt\" = \"Risith\", \"Doshi\" = \"Santhosh\"). "
+            "Use context clues to infer the correct term.\n"
+            "- Use the project documentation excerpts to accurately match the question "
+            "to whichever team member owns that part of the design.\n"
+            "- confidence: 1.0 = absolutely certain, 0.5 = could go either way.\n\n"
+            "Respond ONLY with JSON: "
+            '{"assigned_to": "<username or generic>", "confidence": <0.0-1.0>}'
+        )
+        user_msg = f"Question: {question}"
+
+        t0 = time.time()
+        resp = self._oai.chat.completions.create(
+            model=config.ROUTING_MODEL,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.0,
+            max_tokens=60,
+            response_format={"type": "json_object"},
+        )
+        elapsed_ms = (time.time() - t0) * 1000
+
+        payload = json.loads(resp.choices[0].message.content)
+        assigned = payload.get("assigned_to", "generic").lower().strip()
+        confidence = float(payload.get("confidence", 0.5))
+
+        log.info("LLM ROUTE: assigned_to=%s  conf=%.2f  (%.0fms) | %s",
+                 assigned, confidence, elapsed_ms, question[:80])
+
+        # Map to 3-tier result
+        if assigned == "generic" or assigned == my_uname:
+            return None, None
+
+        # Find the profile for the assigned user
+        target = self._all_profiles.get(assigned)
+        if target is None:
+            log.warning("LLM returned unknown user '%s' — treating as generic", assigned)
+            return None, None
+
+        label = f"{target.display_name.split()[0]} ({target.role})"
+
+        if confidence >= 0.8:
+            # High confidence → hard redirect
+            log.info("LLM ROUTE → REDIRECT to %s (conf=%.2f)", label, confidence)
+            return label, None
+        else:
+            # Lower confidence → soft hint, still answer
+            log.info("LLM ROUTE → HINT %s (conf=%.2f)", label, confidence)
+            return None, label
+
+    # ── keyword-based routing (fallback) ──────────────────────────────
+
+    def _keyword_route_question(self, question: str) -> tuple[str | None, str | None]:
         """Score the question against each user's owned_keywords.
 
         Returns ``(redirect_to, hint_to)``:
@@ -222,6 +415,10 @@ class Pipeline:
         for username, profile in self._all_profiles.items():
             score = sum(1 for kw in profile.owned_keywords if kw.lower() in q_lower)
             scores[username] = (score, profile)
+
+        # Log all scores for debugging
+        score_summary = {u: s for u, (s, _) in scores.items()}
+        log.info("KEYWORD SCORES: %s | %s", score_summary, question[:80])
 
         my_score = scores.get(self._profile.username, (0, self._profile))[0]
 
@@ -246,14 +443,14 @@ class Pipeline:
         # Tier 2: weak off-domain signal OR partial overlap → answer + soft hint
         if best_score <= 2 or my_score > 0:
             log.info(
-                "Soft hint: %s might be better for %s  [me=%d, them=%d]",
+                "KW HINT: %s might be better for %s  [me=%d, them=%d]",
                 question[:60], best_label, my_score, best_score,
             )
             return None, best_label
 
         # Tier 3: clearly theirs (3+ keywords, I score 0) → hard redirect
         log.info(
-            "Hard redirect from %s → %s  [me=%d, them=%d]",
+            "KW REDIRECT from %s → %s  [me=%d, them=%d]",
             self._profile.username, best_label, my_score, best_score,
         )
         return best_label, None

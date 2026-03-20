@@ -200,6 +200,9 @@ class OverlayWindow(QWidget):
             self._current_question_id = resp.question_id
             self.alert_card.show_question(resp.question, hint_to=resp.hint_to or "")
             self.transcript_panel.collapse()
+        # Inject async routing hint if it arrived after block creation
+        if resp.hint_to:
+            self.alert_card.update_hint(resp.hint_to)
         # Streaming update for the current question
         if resp.is_streaming:
             self.alert_card.update_response(resp.bullets, resp.answer, streaming=True)

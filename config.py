@@ -51,8 +51,12 @@ RESPONSE_MODEL = "gpt-4o"
 RESPONSE_MAX_TOKENS = 512
 BULLETS_MODEL = "gpt-4o-mini"         # cheaper model for bullet summaries
 BULLETS_MAX_TOKENS = 256
-QUESTION_DEBOUNCE_SEC = 5.0         # group rapid-fire questions
+QUESTION_DEBOUNCE_SEC = 3.0         # group rapid-fire questions (was 5.0 — reduced for follow-ups)
 QA_HISTORY_DEPTH = 3                # prior Q&A pairs passed to LLM for continuity
+ROUTING_MODEL = "gpt-4o-mini"       # model for semantic question routing
+
+# ── Logging ───────────────────────────────────────────────────────────
+LOG_FILE = BASE_DIR / "nasaai_debug.log"
 
 # ── UI ────────────────────────────────────────────────────────────────
 OVERLAY_WIDTH = 480

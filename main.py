@@ -24,6 +24,20 @@ logging.basicConfig(
 )
 log = logging.getLogger("main")
 
+# File handler — captures DEBUG-level for post-run analysis
+def _attach_file_logger() -> None:
+    import config
+    fh = logging.FileHandler(config.LOG_FILE, mode="w", encoding="utf-8")
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter(
+        "%(asctime)s  %(levelname)-7s  %(name)s  %(message)s",
+        datefmt="%H:%M:%S",
+    ))
+    logging.getLogger().addHandler(fh)
+    log.info("Debug log → %s", config.LOG_FILE)
+
+_attach_file_logger()
+
 
 def _preflight() -> None:
     """Ensure mandatory env vars / files are present."""
@@ -100,10 +114,11 @@ def main() -> None:
 
     # Wire transcript events → UI
     def on_segment(seg):
-        if seg.is_final:
-            window.post_segment(seg)
-        else:
+        if not seg.is_final:
             window.post_interim(seg)
+        elif not seg.is_utterance_end:
+            # Show individual sub-finals; skip combined utterance_end (duplicate)
+            window.post_segment(seg)
 
     store.add_listener(on_segment)
 

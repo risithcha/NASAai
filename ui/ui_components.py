@@ -58,6 +58,7 @@ class TranscriptPanel(QWidget):
         super().__init__(parent)
         self._build_ui()
         self._auto_scroll = True
+        self._interim_pos: int | None = None   # char offset where interim block starts
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -91,6 +92,10 @@ class TranscriptPanel(QWidget):
 
     def append_segment(self, speaker: str, text: str, is_final: bool = True) -> None:
         """Append one transcript segment (thread-safe via Qt signals)."""
+        # If a final segment arrives, wipe any pending interim first
+        if is_final:
+            self._clear_interim()
+
         cursor = self._text.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
 
@@ -114,8 +119,40 @@ class TranscriptPanel(QWidget):
             sb.setValue(sb.maximum())
 
     def set_interim(self, speaker: str, text: str) -> None:
-        """Replace or append an interim (partial) segment."""
-        self.append_segment(speaker, text, is_final=False)
+        """Replace the current interim preview line in-place."""
+        # Delete previous interim block if any
+        self._clear_interim()
+
+        # Record where the new interim starts
+        cursor = self._text.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        self._interim_pos = cursor.position()
+
+        # Insert interim content
+        fmt_speaker = QTextCharFormat()
+        fmt_speaker.setForeground(QColor(_speaker_colour(speaker)))
+        fmt_speaker.setFontWeight(700)
+        fmt_speaker.setFontItalic(True)
+        cursor.insertText(f"{speaker}: ", fmt_speaker)
+
+        fmt_body = QTextCharFormat()
+        fmt_body.setForeground(QColor(TEXT_INTERIM))
+        fmt_body.setFontItalic(True)
+        cursor.insertText(text + "\n", fmt_body)
+
+        if self._auto_scroll:
+            sb = self._text.verticalScrollBar()
+            sb.setValue(sb.maximum())
+
+    def _clear_interim(self) -> None:
+        """Remove the current interim preview text if present."""
+        if self._interim_pos is None:
+            return
+        cursor = self._text.textCursor()
+        cursor.setPosition(self._interim_pos)
+        cursor.movePosition(QTextCursor.MoveOperation.End, QTextCursor.MoveMode.KeepAnchor)
+        cursor.removeSelectedText()
+        self._interim_pos = None
 
     def clear(self) -> None:
         self._text.clear()
@@ -147,6 +184,8 @@ class _QABlock(QFrame):
                  parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._is_redirect = is_redirect
+        self._hint_label: QLabel | None = None
+        self._hint_to = hint_to
         self._build_ui(question, is_redirect, redirect_to, hint_to)
 
     def _build_ui(self, question: str, is_redirect: bool,
@@ -185,15 +224,20 @@ class _QABlock(QFrame):
             return
 
         # Soft hint banner (off-domain but still answering)
+        # Created hidden initially; shown when routing result arrives (may be async)
+        self._hint_label = QLabel()
+        self._hint_label.setWordWrap(True)
+        self._hint_label.setTextFormat(Qt.TextFormat.RichText)
+        self._hint_label.setStyleSheet("font-size: 11px; padding: 0 0 2px 0;")
         if hint_to:
-            hint_label = QLabel(
+            self._hint_label.setText(
                 f'<span style="color:{ACCENT_BLUE}">ℹ️ This might be more for '
                 f'<b>{hint_to}</b> — here\'s what you can say:</span>'
             )
-            hint_label.setWordWrap(True)
-            hint_label.setTextFormat(Qt.TextFormat.RichText)
-            hint_label.setStyleSheet("font-size: 11px; padding: 0 0 2px 0;")
-            layout.addWidget(hint_label)
+            self._hint_label.setVisible(True)
+        else:
+            self._hint_label.setVisible(False)
+        layout.addWidget(self._hint_label)
 
         # Bullet talking-points (top section)
         self._bullets_label = QLabel()
@@ -233,6 +277,23 @@ class _QABlock(QFrame):
         gen = f'<span style="color:{TEXT_SECONDARY}">Generating…</span>'
         self._bullets_label.setText(gen)
         self._answer_label.setText(gen)
+
+    def update_hint(self, hint_to: str) -> None:
+        """Update the hint banner after block creation (e.g. async routing)."""
+        if self._is_redirect or not hint_to or hint_to == self._hint_to:
+            return
+        self._hint_to = hint_to
+        if self._hint_label is not None:
+            self._hint_label.setText(
+                f'<span style="color:{ACCENT_BLUE}">ℹ️ This might be more for '
+                f'<b>{hint_to}</b> — here\'s what you can say:</span>'
+            )
+            self._hint_label.setVisible(True)
+        # Update border colour to blue
+        self.setStyleSheet(
+            f"background-color: {CARD_BG}; border: none; "
+            f"border-left: 3px solid {ACCENT_BLUE}; padding: 4px 0;"
+        )
 
     def set_dual_response(self, bullets: str, answer: str,
                           streaming: bool = True) -> None:
@@ -413,6 +474,11 @@ class AlertCard(QFrame):
         self.show()
         # Force-scroll for a brand-new question so the user sees it
         self._scroll_to_bottom(force=True)
+
+    def update_hint(self, hint_to: str) -> None:
+        """Update the hint banner on the active block (async routing)."""
+        if self._active_block:
+            self._active_block.update_hint(hint_to)
 
     def update_response(self, bullets: str, answer: str,
                         streaming: bool = True) -> None:
