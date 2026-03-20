@@ -34,7 +34,7 @@ DG_SMART_FORMAT = True
 DG_DIARIZE = True
 DG_INTERIM_RESULTS = True
 DG_UTTERANCE_END_MS = 1000
-DG_ENDPOINTING_MS = 300
+DG_ENDPOINTING_MS = 500
 
 # ── RAG / Knowledge Base ─────────────────────────────────────────────
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -49,7 +49,7 @@ SIMILARITY_THRESHOLD = 0.35         # cosine distance (lower = more similar in F
 QUESTION_DETECT_MODEL = "gpt-4o-mini"
 RESPONSE_MODEL = "gpt-4o"
 RESPONSE_MAX_TOKENS = 512
-QUESTION_DEBOUNCE_SEC = 2.0         # group rapid-fire questions
+QUESTION_DEBOUNCE_SEC = 5.0         # group rapid-fire questions
 
 # ── UI ────────────────────────────────────────────────────────────────
 OVERLAY_WIDTH = 480

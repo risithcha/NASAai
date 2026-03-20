@@ -66,8 +66,11 @@ class QuestionDetector:
             "You are a meeting assistant.  Given the recent transcript context "
             "and the latest segment from a remote speaker, determine whether the "
             "remote speaker is asking or directing a question at the presenter "
-            "(the user).  Respond ONLY with JSON: "
-            '{"is_question": true/false, "question": "<rephrased question or empty>"}'
+            "(the user).  If it IS a question, extract the COMPLETE question "
+            "EXACTLY as spoken — do NOT summarize, shorten, rephrase, or "
+            "paraphrase.  Copy the full question verbatim from the segment.  "
+            "Respond ONLY with JSON: "
+            '{"is_question": true/false, "question": "<full verbatim question or empty>"}'
         )
         user_msg = (
             f"### Recent transcript\n{context}\n\n"
@@ -82,7 +85,7 @@ class QuestionDetector:
                     {"role": "user", "content": user_msg},
                 ],
                 temperature=0.0,
-                max_tokens=120,
+                max_tokens=300,
                 response_format={"type": "json_object"},
             )
             import json

@@ -36,6 +36,9 @@ class TranscriptionService:
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._running = False
+        # Per-channel buffer: accumulate is_final transcripts until speech_final
+        self._utterance_buf: dict[int, list[str]] = {}
+        self._utterance_speaker: dict[int, str] = {}
 
     # ── public API ────────────────────────────────────────────────────
 
@@ -151,6 +154,7 @@ class TranscriptionService:
 
     def _handle_results(self, msg: dict) -> None:
         is_final: bool = msg.get("is_final", False)
+        speech_final: bool = msg.get("speech_final", False)
         channel_index: list[int] = msg.get("channel_index", [0, 1])
         channel_id = channel_index[0] if channel_index else 0
 
@@ -168,17 +172,46 @@ class TranscriptionService:
         words = alt.get("words", [])
         speaker = self._extract_speaker(words, channel_id)
 
+        if not is_final:
+            # Interim segment — show as preview only
+            seg = TranscriptSegment(
+                text=transcript,
+                speaker=speaker,
+                channel=channel_id,
+                is_final=False,
+            )
+            self._store.set_interim(seg)
+            return
+
+        # is_final=True: append to per-channel utterance buffer
+        buf = self._utterance_buf.setdefault(channel_id, [])
+        buf.append(transcript)
+        self._utterance_speaker[channel_id] = speaker
+
+        # Always emit the individual final segment for real-time transcript display
         seg = TranscriptSegment(
             text=transcript,
             speaker=speaker,
             channel=channel_id,
-            is_final=is_final,
+            is_final=True,
+            is_utterance_end=False,
         )
+        self._store.add_segment(seg)
 
-        if is_final:
-            self._store.add_segment(seg)
-        else:
-            self._store.set_interim(seg)
+        # When speech_final arrives, emit a combined utterance-end segment
+        if speech_final and buf:
+            combined_text = " ".join(buf)
+            utt_seg = TranscriptSegment(
+                text=combined_text,
+                speaker=self._utterance_speaker.get(channel_id, speaker),
+                channel=channel_id,
+                is_final=True,
+                is_utterance_end=True,
+            )
+            self._utterance_buf[channel_id] = []
+            # Notify listeners directly (don't add to store to avoid duplicates)
+            for cb in self._store._listeners:
+                cb(utt_seg)
 
     @staticmethod
     def _extract_speaker(words: list[dict], channel: int) -> str:

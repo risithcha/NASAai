@@ -81,8 +81,8 @@ class Pipeline:
 
     def _on_segment(self, seg: TranscriptSegment) -> None:
         """Called by TranscriptStore on every new segment."""
-        # Only analyse final segments from remote speakers
-        if not seg.is_final or seg.channel == 1:
+        # Only analyse complete utterances from remote speakers
+        if not seg.is_utterance_end or seg.channel == 1:
             return
         with self._lock:
             self._queue.append(seg)
