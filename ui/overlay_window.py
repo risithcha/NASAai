@@ -198,7 +198,7 @@ class OverlayWindow(QWidget):
         # New question — append a new block
         if resp.question_id != self._current_question_id:
             self._current_question_id = resp.question_id
-            self.alert_card.show_question(resp.question)
+            self.alert_card.show_question(resp.question, hint_to=resp.hint_to or "")
             self.transcript_panel.collapse()
         # Streaming update for the current question
         if resp.is_streaming:

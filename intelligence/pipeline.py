@@ -32,6 +32,7 @@ class SuggestedResponse:
     timestamp: float = field(default_factory=time.time)
     is_streaming: bool = False     # True while response is still arriving
     redirect_to: str | None = None # If set, question belongs to this other user
+    hint_to: str | None = None     # Soft hint: "might be more for X" — still answers
 
 
 ResponseCallback = Callable[[SuggestedResponse], None]
@@ -123,7 +124,7 @@ class Pipeline:
         self._last_question_time = time.time()
 
         # Question routing: check if this question belongs to another user
-        redirect = self._route_question(detected.question_text)
+        redirect, hint = self._route_question(detected.question_text)
         self._question_counter += 1
         qid = self._question_counter
         if redirect and self._on_response:
@@ -141,6 +142,7 @@ class Pipeline:
                 question=detected.question_text,
                 question_id=qid,
                 is_streaming=True,
+                hint_to=hint,
             ))
 
             prior = self._qa_history[-config.QA_HISTORY_DEPTH:] if self._qa_history else None
@@ -181,6 +183,7 @@ class Pipeline:
                     answer="".join(full_answer),
                     question_id=qid,
                     is_streaming=True,
+                    hint_to=hint,
                 ))
                 if not (bullets_done and answer_done):
                     time.sleep(0.05)
@@ -194,6 +197,7 @@ class Pipeline:
                 answer=answer_text,
                 question_id=qid,
                 is_streaming=False,
+                hint_to=hint,
             ))
 
             # Store for conversation continuity (answer only — bullets are ephemeral)
@@ -201,14 +205,16 @@ class Pipeline:
 
     # ── question routing ──────────────────────────────────────────────
 
-    def _route_question(self, question: str) -> str | None:
-        """
-        Score the question against each user's owned_keywords.
-        Returns the display name of a *different* user if the question
-        clearly belongs to someone else, or None if it's ours (or ambiguous).
+    def _route_question(self, question: str) -> tuple[str | None, str | None]:
+        """Score the question against each user's owned_keywords.
+
+        Returns ``(redirect_to, hint_to)``:
+        * ``(None, None)``          — clearly ours, full answer.
+        * ``(None, "Name (Role)")`` — not primarily ours, still answer + soft hint.
+        * ``("Name (Role)", None)`` — clearly theirs, hard redirect (no answer).
         """
         if len(self._all_profiles) < 2:
-            return None  # only one user — no routing needed
+            return None, None
 
         q_lower = question.lower()
         scores: dict[str, tuple[int, UserProfile]] = {}
@@ -225,22 +231,29 @@ class Pipeline:
 
         if best_score == 0:
             # No keywords matched any user — generic question, answer it
-            return None
+            return None, None
 
         if best_user == self._profile.username:
             # Current user is the best match — no redirect
-            return None
+            return None, None
 
-        # Another user scores higher — only redirect if we clearly don't own it
+        best_label = f"{best_profile.display_name.split()[0]} ({best_profile.role})"
+
+        # Tier 1: overlapping domain — I score well too → full answer, no hint
         if my_score > 0 and my_score >= best_score * 0.5:
-            # Overlapping domain — answer it (both users relevant)
-            return None
+            return None, None
 
-        # This question belongs to someone else
-        name = best_profile.display_name.split()[0]
-        role = best_profile.role
+        # Tier 2: weak off-domain signal OR partial overlap → answer + soft hint
+        if best_score <= 2 or my_score > 0:
+            log.info(
+                "Soft hint: %s might be better for %s  [me=%d, them=%d]",
+                question[:60], best_label, my_score, best_score,
+            )
+            return None, best_label
+
+        # Tier 3: clearly theirs (3+ keywords, I score 0) → hard redirect
         log.info(
-            "Question routed away from %s → %s (%s)  [scores: me=%d, them=%d]",
-            self._profile.username, name, role, my_score, best_score,
+            "Hard redirect from %s → %s  [me=%d, them=%d]",
+            self._profile.username, best_label, my_score, best_score,
         )
-        return f"{name} ({role})"
+        return best_label, None

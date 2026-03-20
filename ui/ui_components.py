@@ -143,13 +143,20 @@ class _QABlock(QFrame):
     """
 
     def __init__(self, question: str, is_redirect: bool = False,
-                 redirect_to: str = "", parent: QWidget | None = None) -> None:
+                 redirect_to: str = "", hint_to: str = "",
+                 parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._is_redirect = is_redirect
-        self._build_ui(question, is_redirect, redirect_to)
+        self._build_ui(question, is_redirect, redirect_to, hint_to)
 
-    def _build_ui(self, question: str, is_redirect: bool, redirect_to: str) -> None:
-        border_colour = TEXT_SECONDARY if is_redirect else ACCENT_YELLOW
+    def _build_ui(self, question: str, is_redirect: bool,
+                  redirect_to: str, hint_to: str) -> None:
+        if is_redirect:
+            border_colour = TEXT_SECONDARY
+        elif hint_to:
+            border_colour = ACCENT_BLUE
+        else:
+            border_colour = ACCENT_YELLOW
         self.setStyleSheet(
             f"background-color: {CARD_BG}; border: none; "
             f"border-left: 3px solid {border_colour}; padding: 4px 0;"
@@ -176,6 +183,17 @@ class _QABlock(QFrame):
             redir_label.setStyleSheet("font-size: 12px; padding: 0;")
             layout.addWidget(redir_label)
             return
+
+        # Soft hint banner (off-domain but still answering)
+        if hint_to:
+            hint_label = QLabel(
+                f'<span style="color:{ACCENT_BLUE}">ℹ️ This might be more for '
+                f'<b>{hint_to}</b> — here\'s what you can say:</span>'
+            )
+            hint_label.setWordWrap(True)
+            hint_label.setTextFormat(Qt.TextFormat.RichText)
+            hint_label.setStyleSheet("font-size: 11px; padding: 0 0 2px 0;")
+            layout.addWidget(hint_label)
 
         # Bullet talking-points (top section)
         self._bullets_label = QLabel()
@@ -379,13 +397,13 @@ class AlertCard(QFrame):
 
     # ── public API ────────────────────────────────────────────────────
 
-    def show_question(self, question: str) -> None:
+    def show_question(self, question: str, hint_to: str = "") -> None:
         """Append a new Q&A block for an incoming question."""
         self._header_label.setText("Question Detected")
         self._header_label.setStyleSheet(
             f"color: {ACCENT_YELLOW}; font-size: 12px; font-weight: bold;"
         )
-        block = _QABlock(question)
+        block = _QABlock(question, hint_to=hint_to)
         block.set_loading()
         # Insert before the trailing stretch
         self._history_layout.insertWidget(self._history_layout.count() - 1, block)
