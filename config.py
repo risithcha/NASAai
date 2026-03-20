@@ -14,6 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 FAISS_INDEX_DIR = DATA_DIR / "faiss_index"
 PDF_PATH = DATA_DIR / "nasa_report.pdf"
+PROFILES_PATH = DATA_DIR / "NASAai_user_profiles.md"
 
 # ── API Keys ──────────────────────────────────────────────────────────
 DEEPGRAM_API_KEY: str = os.getenv("DEEPGRAM_API_KEY", "")
@@ -41,6 +42,7 @@ EMBEDDING_DIMENSIONS = 1536
 CHUNK_SIZE_TOKENS = 500
 CHUNK_OVERLAP_TOKENS = 100
 SIMILARITY_TOP_K = 5
+SIMILARITY_FETCH_K = 10              # over-fetch before per-user filtering
 SIMILARITY_THRESHOLD = 0.35         # cosine distance (lower = more similar in FAISS L2)
 
 # ── LLM ───────────────────────────────────────────────────────────────

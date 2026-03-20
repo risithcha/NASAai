@@ -7,7 +7,9 @@ the GUI thread touches widgets.
 
 from __future__ import annotations
 
+import ctypes
 import logging
+import sys
 from typing import Optional
 
 from PyQt6.QtCore import QPoint, Qt, pyqtSignal, pyqtSlot
@@ -20,11 +22,18 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+# Windows Display Affinity constants
+WDA_NONE = 0x00000000
+WDA_EXCLUDEFROMCAPTURE = 0x00000011
+
 import config
+from accounts.user_profile import UserProfile
 from intelligence.pipeline import SuggestedResponse
 from transcription.transcript_store import TranscriptSegment
 from ui.ui_components import (
+    ACCENT_GREEN,
     ACCENT_RED,
+    ACCENT_YELLOW,
     DARK_BG,
     TEXT_SECONDARY,
     AlertCard,
@@ -45,9 +54,11 @@ class OverlayWindow(QWidget):
     sig_status = pyqtSignal(str, bool)     # (indicator_name, active)
     sig_error = pyqtSignal(str)            # (indicator_name,)
 
-    def __init__(self) -> None:
+    def __init__(self, user_profile: UserProfile | None = None) -> None:
         super().__init__()
         self._drag_pos: Optional[QPoint] = None
+        self._stealth_active = False
+        self._user_profile = user_profile
         self._build_ui()
         self._connect_signals()
 
@@ -80,8 +91,8 @@ class OverlayWindow(QWidget):
         title_bar = self._make_title_bar()
         root.addWidget(title_bar)
 
-        # Alert card (hidden initially)
-        self.alert_card = AlertCard(dismiss_sec=45)
+        # Alert card (hidden initially, dismissed manually)
+        self.alert_card = AlertCard()
         root.addWidget(self.alert_card)
 
         # Live transcript (takes remaining space)
@@ -103,11 +114,38 @@ class OverlayWindow(QWidget):
 
         from PyQt6.QtWidgets import QLabel
 
-        title = QLabel("🚀 NASA Meeting Assistant")
+        if self._user_profile:
+            name = self._user_profile.display_name.split()[0]
+            role = self._user_profile.role
+            title_text = f"🚀 {name} — {role}"
+        else:
+            title_text = "🚀 NASA Meeting Assistant"
+
+        title = QLabel(title_text)
         title.setStyleSheet(
             f"color: {TEXT_SECONDARY}; font-size: 12px; font-weight: bold;"
         )
         layout.addWidget(title, 1)
+
+        # Stealth toggle button (hide from screen capture)
+        self._stealth_btn = QPushButton("👁")
+        self._stealth_btn.setFixedSize(24, 24)
+        self._stealth_btn.setToolTip("Toggle stealth mode (hide from screen capture)")
+        self._stealth_btn.setStyleSheet(
+            f"""
+            QPushButton {{
+                background: transparent;
+                color: {TEXT_SECONDARY};
+                border: none;
+                font-size: 14px;
+            }}
+            QPushButton:hover {{
+                color: {ACCENT_YELLOW};
+            }}
+            """
+        )
+        self._stealth_btn.clicked.connect(self._toggle_stealth)
+        layout.addWidget(self._stealth_btn)
 
         close_btn = QPushButton("✕")
         close_btn.setFixedSize(24, 24)
@@ -150,6 +188,10 @@ class OverlayWindow(QWidget):
 
     @pyqtSlot(object)
     def _on_response(self, resp: SuggestedResponse) -> None:
+        # Redirect: question belongs to another user — show brief notification
+        if resp.redirect_to:
+            self.alert_card.show_redirect(resp.question, resp.redirect_to)
+            return
         if resp.is_streaming and not self.alert_card.isVisible():
             self.alert_card.show_question(resp.question)
         if resp.is_streaming:
@@ -199,3 +241,73 @@ class OverlayWindow(QWidget):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self._drag_pos = None
+
+    # ── screen capture hiding (Windows) ───────────────────────────────
+
+    def showEvent(self, event) -> None:
+        """Apply stealth mode automatically when the window first appears."""
+        super().showEvent(event)
+        if sys.platform == "win32":
+            self._set_display_affinity(WDA_EXCLUDEFROMCAPTURE)
+
+    def _set_display_affinity(self, affinity: int) -> bool:
+        """Call SetWindowDisplayAffinity via ctypes. Returns True on success."""
+        if sys.platform != "win32":
+            return False
+        try:
+            hwnd = int(self.winId())
+            result = ctypes.windll.user32.SetWindowDisplayAffinity(hwnd, affinity)
+            success = result != 0
+            if success:
+                self._stealth_active = (affinity == WDA_EXCLUDEFROMCAPTURE)
+                log.info("Display affinity set to 0x%X (stealth=%s)", affinity, self._stealth_active)
+            else:
+                err = ctypes.GetLastError()
+                log.warning("SetWindowDisplayAffinity failed (error %d)", err)
+            self._update_stealth_ui()
+            return success
+        except Exception:
+            log.exception("Failed to set display affinity")
+            return False
+
+    def _toggle_stealth(self) -> None:
+        """Toggle between hidden and visible in screen capture."""
+        new_affinity = WDA_NONE if self._stealth_active else WDA_EXCLUDEFROMCAPTURE
+        self._set_display_affinity(new_affinity)
+
+    def _update_stealth_ui(self) -> None:
+        """Update the stealth button appearance based on current state."""
+        if self._stealth_active:
+            self._stealth_btn.setText("🛡")
+            self._stealth_btn.setToolTip("Stealth ON — hidden from screen capture (click to disable)")
+            self._stealth_btn.setStyleSheet(
+                f"""
+                QPushButton {{
+                    background: transparent;
+                    color: {ACCENT_GREEN};
+                    border: none;
+                    font-size: 14px;
+                }}
+                QPushButton:hover {{
+                    color: {ACCENT_YELLOW};
+                }}
+                """
+            )
+            self.status_bar.stealth_indicator.set_active(True)
+        else:
+            self._stealth_btn.setText("👁")
+            self._stealth_btn.setToolTip("Stealth OFF — visible in screen capture (click to enable)")
+            self._stealth_btn.setStyleSheet(
+                f"""
+                QPushButton {{
+                    background: transparent;
+                    color: {TEXT_SECONDARY};
+                    border: none;
+                    font-size: 14px;
+                }}
+                QPushButton:hover {{
+                    color: {ACCENT_YELLOW};
+                }}
+                """
+            )
+            self.status_bar.stealth_indicator.set_active(False)

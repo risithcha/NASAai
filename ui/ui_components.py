@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QScrollArea,
     QSizePolicy,
     QTextEdit,
@@ -125,16 +126,13 @@ class TranscriptPanel(QWidget):
 class AlertCard(QFrame):
     """
     Displays a detected question and the AI-suggested talking points.
-    Auto-dismisses after ``dismiss_sec`` seconds.
+    Stays visible until the user clicks the dismiss button.
     """
 
     dismissed = pyqtSignal()
 
-    def __init__(
-        self, dismiss_sec: int = 45, parent: QWidget | None = None
-    ) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._dismiss_sec = dismiss_sec
         self._build_ui()
         self.hide()
 
@@ -164,9 +162,28 @@ class AlertCard(QFrame):
         )
         header_row.addWidget(icon_lbl)
         header_row.addWidget(self._header_label, 1)
-        self._timer_label = QLabel("")
-        self._timer_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px;")
-        header_row.addWidget(self._timer_label)
+
+        # Dismiss button (replaces the old timer label)
+        self._dismiss_btn = QPushButton("✕ Got it")
+        self._dismiss_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._dismiss_btn.setStyleSheet(
+            f"""
+            QPushButton {{
+                background-color: {TEXT_SECONDARY};
+                color: {DARK_BG};
+                border: none;
+                border-radius: 4px;
+                padding: 2px 10px;
+                font-size: 11px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {ACCENT_YELLOW};
+            }}
+            """
+        )
+        self._dismiss_btn.clicked.connect(self.dismiss)
+        header_row.addWidget(self._dismiss_btn)
         layout.addLayout(header_row)
 
         # Question text
@@ -192,22 +209,18 @@ class AlertCard(QFrame):
         )
         layout.addWidget(self._response_label)
 
-        # Auto-dismiss timer
-        self._countdown = 0
-        self._timer = QTimer(self)
-        self._timer.setInterval(1000)
-        self._timer.timeout.connect(self._tick)
-
     # ── public API ────────────────────────────────────────────────────
 
     def show_question(self, question: str) -> None:
+        self._header_label.setText("Question Detected")
+        self._header_label.setStyleSheet(
+            f"color: {ACCENT_YELLOW}; font-size: 12px; font-weight: bold;"
+        )
         self._question_label.setText(f'"{question}"')
         self._response_label.setText(
             f'<span style="color:{TEXT_SECONDARY}">Generating talking points…</span>'
         )
-        self._countdown = self._dismiss_sec
-        self._timer_label.setText(f"{self._countdown}s")
-        self._timer.start()
+        self._dismiss_btn.setVisible(False)  # hide until response is ready
         self.show()
 
     def update_response(self, response_text: str, streaming: bool = True) -> None:
@@ -219,19 +232,25 @@ class AlertCard(QFrame):
 
     def finish_response(self, response_text: str) -> None:
         self.update_response(response_text, streaming=False)
+        self._dismiss_btn.setVisible(True)  # show button once response is complete
 
     def dismiss(self) -> None:
-        self._timer.stop()
         self.hide()
         self.dismissed.emit()
 
-    # ── internal ──────────────────────────────────────────────────────
-
-    def _tick(self) -> None:
-        self._countdown -= 1
-        self._timer_label.setText(f"{self._countdown}s")
-        if self._countdown <= 0:
-            self.dismiss()
+    def show_redirect(self, question: str, redirect_to: str) -> None:
+        """Show a brief notification that this question is for another team member."""
+        self._question_label.setText(f'"{question}"')
+        self._header_label.setText("Not Your Question")
+        self._header_label.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; font-size: 12px; font-weight: bold;"
+        )
+        self._response_label.setText(
+            f'<span style="color:{TEXT_SECONDARY}">This one\'s for '
+            f'<b style="color:{ACCENT_BLUE}">{redirect_to}</b> — sit tight.</span>'
+        )
+        self._dismiss_btn.setVisible(True)
+        self.show()
 
     @staticmethod
     def _md_to_html(text: str) -> str:
@@ -293,11 +312,13 @@ class StatusBar(QWidget):
         self.audio_indicator = StatusIndicator("Audio")
         self.deepgram_indicator = StatusIndicator("Deepgram")
         self.ai_indicator = StatusIndicator("AI")
+        self.stealth_indicator = StatusIndicator("Stealth")
 
         layout.addWidget(self.audio_indicator)
         layout.addWidget(self.deepgram_indicator)
         layout.addWidget(self.ai_indicator)
         layout.addStretch()
+        layout.addWidget(self.stealth_indicator)
 
         self.setStyleSheet(
             f"background-color: #16161E; border-top: 1px solid {TEXT_SECONDARY};"

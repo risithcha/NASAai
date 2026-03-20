@@ -11,17 +11,23 @@ from typing import Generator
 from openai import OpenAI
 
 import config
+from accounts.user_profile import UserProfile
+from intelligence.user_context_filter import UserContextFilter
 from knowledge.knowledge_base import KnowledgeBase
 
 log = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """\
-You are a real-time meeting assistant helping a presenter answer questions \
-about a NASA report during a live Microsoft Teams call.
+SYSTEM_PROMPT_TEMPLATE = """\
+You are a real-time meeting assistant helping {display_name}, the {role}, \
+answer questions about the NASA TerraScan report during a live Microsoft Teams call.
+
+{display_name}'s expertise: {expertise}
 
 RULES:
 - Be concise: 2-4 bullet points max.
-- Each bullet should be a clear, self-contained talking point.
+- Each bullet should be a clear, self-contained talking point the presenter can say aloud.
+- Only suggest talking points within {display_name}'s domain as {role}.
+- Do NOT suggest talking points about areas other team members handle.
 - Cite the page number or section if known.
 - If the document does not contain relevant info, say so briefly.
 - Never fabricate data – only use what is in the provided document excerpts.
@@ -29,9 +35,15 @@ RULES:
 
 
 class ResponseGenerator:
-    def __init__(self, kb: KnowledgeBase) -> None:
+    def __init__(self, kb: KnowledgeBase, user_profile: UserProfile) -> None:
         self._client = OpenAI(api_key=config.OPENAI_API_KEY)
         self._kb = kb
+        self._profile = user_profile
+        self._system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
+            display_name=user_profile.display_name.split()[0],
+            role=user_profile.role,
+            expertise=user_profile.expertise,
+        )
 
     def generate(self, question: str, context: str) -> str:
         """
@@ -53,9 +65,14 @@ class ResponseGenerator:
     # ── retrieval ─────────────────────────────────────────────────────
 
     def _retrieve(self, question: str) -> str:
-        results = self._kb.search(question, k=config.SIMILARITY_TOP_K)
+        results = self._kb.search(question, k=config.SIMILARITY_FETCH_K)
         if not results:
             return "(No relevant document excerpts found.)"
+
+        # Per-user filtering: re-rank and keep top-K
+        results = UserContextFilter.filter(
+            results, self._profile, top_k=config.SIMILARITY_TOP_K
+        )
 
         parts: list[str] = []
         for chunk, dist in results:
@@ -75,7 +92,7 @@ class ResponseGenerator:
             f"## Relevant document excerpts\n{excerpts}"
         )
         return [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": self._system_prompt},
             {"role": "user", "content": user_msg},
         ]
 

@@ -9,6 +9,8 @@ import json
 import logging
 from pathlib import Path
 
+import time
+
 import faiss
 import numpy as np
 from openai import OpenAI
@@ -97,17 +99,57 @@ class KnowledgeBase:
 
     def _embed_texts(self, texts: list[str]) -> np.ndarray:
         """Call OpenAI embeddings and return an (N, dim) float32 array."""
-        # OpenAI allows up to 2048 inputs per call; batch if needed
+        from openai import RateLimitError, APIError
+
         all_vecs: list[list[float]] = []
         batch_size = 512
+        max_retries = 5
+
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
-            resp = self._client.embeddings.create(
-                model=config.EMBEDDING_MODEL,
-                input=batch,
-            )
-            for item in resp.data:
-                all_vecs.append(item.embedding)
+
+            for attempt in range(max_retries):
+                try:
+                    resp = self._client.embeddings.create(
+                        model=config.EMBEDDING_MODEL,
+                        input=batch,
+                    )
+                    for item in resp.data:
+                        all_vecs.append(item.embedding)
+                    break  # success
+                except RateLimitError as exc:
+                    # Distinguish transient rate-limit from hard quota error
+                    err_body = getattr(exc, "body", {}) or {}
+                    err_obj = err_body.get("error", {}) if isinstance(err_body, dict) else {}
+                    code = err_obj.get("code", "")
+
+                    if code == "insufficient_quota":
+                        log.error(
+                            "\n╔══════════════════════════════════════════════════╗\n"
+                            "║  OpenAI quota exhausted — no credits remaining.  ║\n"
+                            "║                                                  ║\n"
+                            "║  1. Go to platform.openai.com/account/billing    ║\n"
+                            "║  2. Add credits ($5 is more than enough)         ║\n"
+                            "║  3. Re-run: python main.py                       ║\n"
+                            "╚══════════════════════════════════════════════════╝"
+                        )
+                        raise SystemExit(1) from exc
+
+                    # Transient 429 — exponential backoff
+                    wait = 2 ** attempt
+                    log.warning(
+                        "Rate-limited (attempt %d/%d). Retrying in %ds …",
+                        attempt + 1, max_retries, wait,
+                    )
+                    time.sleep(wait)
+                except APIError:
+                    log.exception("OpenAI API error during embedding")
+                    raise
+            else:
+                raise RuntimeError(
+                    f"Failed to embed batch after {max_retries} retries"
+                )
+
         return np.array(all_vecs, dtype=np.float32)
 
     # ── persistence ───────────────────────────────────────────────────

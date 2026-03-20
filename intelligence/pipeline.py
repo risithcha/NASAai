@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 import config
+from accounts.user_profile import UserProfile
 from intelligence.question_detector import QuestionDetector, DetectedQuestion
 from intelligence.response_generator import ResponseGenerator
 from knowledge.knowledge_base import KnowledgeBase
@@ -27,6 +28,7 @@ class SuggestedResponse:
     response: str
     timestamp: float = field(default_factory=time.time)
     is_streaming: bool = False     # True while response is still arriving
+    redirect_to: str | None = None # If set, question belongs to this other user
 
 
 ResponseCallback = Callable[[SuggestedResponse], None]
@@ -42,11 +44,15 @@ class Pipeline:
         self,
         store: TranscriptStore,
         kb: KnowledgeBase,
+        user_profile: UserProfile,
+        all_profiles: dict[str, UserProfile] | None = None,
         on_response: ResponseCallback | None = None,
     ) -> None:
         self._store = store
         self._detector = QuestionDetector()
-        self._generator = ResponseGenerator(kb)
+        self._generator = ResponseGenerator(kb, user_profile)
+        self._profile = user_profile
+        self._all_profiles = all_profiles or {user_profile.username: user_profile}
         self._on_response = on_response
         self._running = False
         self._thread: threading.Thread | None = None
@@ -111,6 +117,16 @@ class Pipeline:
         log.info("Question detected: %s", detected.question_text)
         self._last_question_time = time.time()
 
+        # Question routing: check if this question belongs to another user
+        redirect = self._route_question(detected.question_text)
+        if redirect and self._on_response:
+            self._on_response(SuggestedResponse(
+                question=detected.question_text,
+                response="",
+                redirect_to=redirect,
+            ))
+            return
+
         # Stream the response
         if self._on_response:
             # First emit a "streaming started" placeholder
@@ -139,3 +155,49 @@ class Pipeline:
                 is_streaming=False,
             )
             self._on_response(final)
+
+    # ── question routing ──────────────────────────────────────────────
+
+    def _route_question(self, question: str) -> str | None:
+        """
+        Score the question against each user's owned_keywords.
+        Returns the display name of a *different* user if the question
+        clearly belongs to someone else, or None if it's ours (or ambiguous).
+        """
+        if len(self._all_profiles) < 2:
+            return None  # only one user — no routing needed
+
+        q_lower = question.lower()
+        scores: dict[str, tuple[int, UserProfile]] = {}
+
+        for username, profile in self._all_profiles.items():
+            score = sum(1 for kw in profile.owned_keywords if kw.lower() in q_lower)
+            scores[username] = (score, profile)
+
+        my_score = scores.get(self._profile.username, (0, self._profile))[0]
+
+        # Find the best-matching user
+        best_user = max(scores, key=lambda u: scores[u][0])
+        best_score, best_profile = scores[best_user]
+
+        if best_score == 0:
+            # No keywords matched any user — generic question, answer it
+            return None
+
+        if best_user == self._profile.username:
+            # Current user is the best match — no redirect
+            return None
+
+        # Another user scores higher — only redirect if we clearly don't own it
+        if my_score > 0 and my_score >= best_score * 0.5:
+            # Overlapping domain — answer it (both users relevant)
+            return None
+
+        # This question belongs to someone else
+        name = best_profile.display_name.split()[0]
+        role = best_profile.role
+        log.info(
+            "Question routed away from %s → %s (%s)  [scores: me=%d, them=%d]",
+            self._profile.username, name, role, my_score, best_score,
+        )
+        return f"{name} ({role})"

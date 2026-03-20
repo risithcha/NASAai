@@ -56,15 +56,33 @@ def main() -> None:
     from PyQt6.QtCore import QTimer
 
     import config
+    from accounts.user_profile import load_profiles, UserSession
     from audio.audio_capture import AudioCapture
     from intelligence.pipeline import Pipeline
     from knowledge.knowledge_base import KnowledgeBase
     from transcription.transcript_store import TranscriptStore
     from transcription.transcription_service import TranscriptionService
     from ui.overlay_window import OverlayWindow
+    from ui.profile_picker import ProfilePickerDialog
 
     app = QApplication(sys.argv)
     app.setApplicationName("NASA Meeting Assistant")
+
+    # ── Profile picker ────────────────────────────────────────────────
+    profiles = load_profiles()
+    if not profiles:
+        log.error("No user profiles found. Check %s", config.PROFILES_PATH)
+        sys.exit(1)
+
+    picker = ProfilePickerDialog(profiles)
+    if picker.exec() != ProfilePickerDialog.DialogCode.Accepted or not picker.selected_profile:
+        log.info("No profile selected — exiting.")
+        sys.exit(0)
+
+    session = UserSession()
+    session.current_user = picker.selected_profile
+    user_profile = session.current_user
+    log.info("Signed in as %s (%s)", user_profile.display_name, user_profile.role)
 
     # ── Knowledge base ────────────────────────────────────────────────
     log.info("Preparing knowledge base …")
@@ -75,10 +93,10 @@ def main() -> None:
     # ── Core objects ──────────────────────────────────────────────────
     store = TranscriptStore()
     transcription = TranscriptionService(store)
-    pipeline = Pipeline(store, kb)
+    pipeline = Pipeline(store, kb, user_profile, all_profiles=profiles)
 
     # ── UI ────────────────────────────────────────────────────────────
-    window = OverlayWindow()
+    window = OverlayWindow(user_profile)
 
     # Wire transcript events → UI
     def on_segment(seg):
