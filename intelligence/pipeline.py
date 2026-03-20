@@ -6,6 +6,7 @@ from remote speakers, runs RAG + LLM, and emits suggested responses.
 from __future__ import annotations
 
 import logging
+import queue
 import threading
 import time
 from dataclasses import dataclass, field
@@ -25,7 +26,9 @@ log = logging.getLogger(__name__)
 class SuggestedResponse:
     """Payload emitted when a question is detected and answered."""
     question: str
-    response: str
+    bullets: str = ""                  # accumulated bullet-point text
+    answer: str = ""                   # accumulated spoken-ready answer text
+    question_id: int = 0               # unique per question; same for all streaming deltas
     timestamp: float = field(default_factory=time.time)
     is_streaming: bool = False     # True while response is still arriving
     redirect_to: str | None = None # If set, question belongs to this other user
@@ -59,6 +62,8 @@ class Pipeline:
         self._queue: list[TranscriptSegment] = []
         self._lock = threading.Lock()
         self._last_question_time: float = 0.0
+        self._question_counter: int = 0
+        self._qa_history: list[tuple[str, str]] = []  # (question, response) pairs
 
     # ── public API ────────────────────────────────────────────────────
 
@@ -119,42 +124,80 @@ class Pipeline:
 
         # Question routing: check if this question belongs to another user
         redirect = self._route_question(detected.question_text)
+        self._question_counter += 1
+        qid = self._question_counter
         if redirect and self._on_response:
             self._on_response(SuggestedResponse(
                 question=detected.question_text,
-                response="",
+                question_id=qid,
                 redirect_to=redirect,
             ))
             return
 
-        # Stream the response
+        # Dual-stream the response (bullets + answer in parallel)
         if self._on_response:
-            # First emit a "streaming started" placeholder
-            placeholder = SuggestedResponse(
+            # Placeholder: streaming started
+            self._on_response(SuggestedResponse(
                 question=detected.question_text,
-                response="",
+                question_id=qid,
                 is_streaming=True,
-            )
-            self._on_response(placeholder)
+            ))
 
-            full_response = []
-            for delta in self._generator.generate_stream(
-                detected.question_text, context
-            ):
-                full_response.append(delta)
-                partial = SuggestedResponse(
+            prior = self._qa_history[-config.QA_HISTORY_DEPTH:] if self._qa_history else None
+            bullet_q, answer_q = self._generator.generate_dual_stream(
+                detected.question_text, context, prior_qa=prior,
+            )
+
+            full_bullets: list[str] = []
+            full_answer: list[str] = []
+            bullets_done = False
+            answer_done = False
+
+            while not (bullets_done and answer_done):
+                # Drain bullet queue
+                while not bullets_done:
+                    try:
+                        chunk = bullet_q.get_nowait()
+                    except queue.Empty:
+                        break
+                    if chunk is None:
+                        bullets_done = True
+                    else:
+                        full_bullets.append(chunk)
+                # Drain answer queue
+                while not answer_done:
+                    try:
+                        chunk = answer_q.get_nowait()
+                    except queue.Empty:
+                        break
+                    if chunk is None:
+                        answer_done = True
+                    else:
+                        full_answer.append(chunk)
+
+                self._on_response(SuggestedResponse(
                     question=detected.question_text,
-                    response="".join(full_response),
+                    bullets="".join(full_bullets),
+                    answer="".join(full_answer),
+                    question_id=qid,
                     is_streaming=True,
-                )
-                self._on_response(partial)
+                ))
+                if not (bullets_done and answer_done):
+                    time.sleep(0.05)
 
-            final = SuggestedResponse(
+            # Final emission
+            bullets_text = "".join(full_bullets)
+            answer_text = "".join(full_answer)
+            self._on_response(SuggestedResponse(
                 question=detected.question_text,
-                response="".join(full_response),
+                bullets=bullets_text,
+                answer=answer_text,
+                question_id=qid,
                 is_streaming=False,
-            )
-            self._on_response(final)
+            ))
+
+            # Store for conversation continuity (answer only — bullets are ephemeral)
+            self._qa_history.append((detected.question_text, answer_text))
 
     # ── question routing ──────────────────────────────────────────────
 

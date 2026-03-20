@@ -59,6 +59,7 @@ class OverlayWindow(QWidget):
         self._drag_pos: Optional[QPoint] = None
         self._stealth_active = False
         self._user_profile = user_profile
+        self._current_question_id: int = -1
         self._build_ui()
         self._connect_signals()
 
@@ -175,6 +176,7 @@ class OverlayWindow(QWidget):
         self.sig_response.connect(self._on_response)
         self.sig_status.connect(self._on_status)
         self.sig_error.connect(self._on_error)
+        self.alert_card.dismissed.connect(self.transcript_panel.expand)
 
     # ── slots (always on GUI thread) ──────────────────────────────────
 
@@ -188,16 +190,21 @@ class OverlayWindow(QWidget):
 
     @pyqtSlot(object)
     def _on_response(self, resp: SuggestedResponse) -> None:
-        # Redirect: question belongs to another user — show brief notification
+        # Redirect: question belongs to another user
         if resp.redirect_to:
+            self._current_question_id = resp.question_id
             self.alert_card.show_redirect(resp.question, resp.redirect_to)
             return
-        if resp.is_streaming and not self.alert_card.isVisible():
+        # New question — append a new block
+        if resp.question_id != self._current_question_id:
+            self._current_question_id = resp.question_id
             self.alert_card.show_question(resp.question)
+            self.transcript_panel.collapse()
+        # Streaming update for the current question
         if resp.is_streaming:
-            self.alert_card.update_response(resp.response, streaming=True)
+            self.alert_card.update_response(resp.bullets, resp.answer, streaming=True)
         else:
-            self.alert_card.finish_response(resp.response)
+            self.alert_card.finish_response(resp.bullets, resp.answer)
 
     @pyqtSlot(str, bool)
     def _on_status(self, name: str, active: bool) -> None:

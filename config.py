@@ -49,7 +49,10 @@ SIMILARITY_THRESHOLD = 0.35         # cosine distance (lower = more similar in F
 QUESTION_DETECT_MODEL = "gpt-4o-mini"
 RESPONSE_MODEL = "gpt-4o"
 RESPONSE_MAX_TOKENS = 512
+BULLETS_MODEL = "gpt-4o-mini"         # cheaper model for bullet summaries
+BULLETS_MAX_TOKENS = 256
 QUESTION_DEBOUNCE_SEC = 5.0         # group rapid-fire questions
+QA_HISTORY_DEPTH = 3                # prior Q&A pairs passed to LLM for continuity
 
 # ── UI ────────────────────────────────────────────────────────────────
 OVERLAY_WIDTH = 480

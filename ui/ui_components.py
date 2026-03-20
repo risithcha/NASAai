@@ -63,11 +63,11 @@ class TranscriptPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        header = QLabel("LIVE TRANSCRIPT")
-        header.setStyleSheet(
+        self._header = QLabel("LIVE TRANSCRIPT")
+        self._header.setStyleSheet(
             f"color: {TEXT_SECONDARY}; font-size: 11px; font-weight: bold; padding: 4px 8px;"
         )
-        layout.addWidget(header)
+        layout.addWidget(self._header)
 
         self._text = QTextEdit()
         self._text.setReadOnly(True)
@@ -120,19 +120,161 @@ class TranscriptPanel(QWidget):
     def clear(self) -> None:
         self._text.clear()
 
+    def collapse(self) -> None:
+        """Shrink to a thin strip showing only the latest transcript line."""
+        self._header.hide()
+        self.setFixedHeight(50)
+
+    def expand(self) -> None:
+        """Restore full transcript panel height."""
+        self._header.show()
+        self.setMinimumHeight(0)
+        self.setMaximumHeight(16777215)  # QWIDGETSIZE_MAX
+
 
 # ── Alert Card ────────────────────────────────────────────────────────
 
+class _QABlock(QFrame):
+    """A single question-and-answer block displayed inside the AlertCard history.
+
+    Layout (top → bottom):
+        Question (italic)  →  Bullets (talking points)  →  Divider  →
+        "What to say:" header  →  Answer (green, bold, spoken-ready paragraph)
+    """
+
+    def __init__(self, question: str, is_redirect: bool = False,
+                 redirect_to: str = "", parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._is_redirect = is_redirect
+        self._build_ui(question, is_redirect, redirect_to)
+
+    def _build_ui(self, question: str, is_redirect: bool, redirect_to: str) -> None:
+        border_colour = TEXT_SECONDARY if is_redirect else ACCENT_YELLOW
+        self.setStyleSheet(
+            f"background-color: {CARD_BG}; border: none; "
+            f"border-left: 3px solid {border_colour}; padding: 4px 0;"
+        )
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(8, 4, 4, 4)
+        layout.setSpacing(3)
+
+        # Question text
+        self._question_label = QLabel(f'"{question}"')
+        self._question_label.setWordWrap(True)
+        self._question_label.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 13px; font-style: italic; padding: 0;"
+        )
+        layout.addWidget(self._question_label)
+
+        if is_redirect:
+            redir_label = QLabel(
+                f'<span style="color:{TEXT_SECONDARY}">This one\'s for '
+                f'<b style="color:{ACCENT_BLUE}">{redirect_to}</b> — sit tight.</span>'
+            )
+            redir_label.setWordWrap(True)
+            redir_label.setTextFormat(Qt.TextFormat.RichText)
+            redir_label.setStyleSheet("font-size: 12px; padding: 0;")
+            layout.addWidget(redir_label)
+            return
+
+        # Bullet talking-points (top section)
+        self._bullets_label = QLabel()
+        self._bullets_label.setWordWrap(True)
+        self._bullets_label.setTextFormat(Qt.TextFormat.RichText)
+        self._bullets_label.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 12px; padding: 0;"
+        )
+        layout.addWidget(self._bullets_label)
+
+        # Thin divider
+        divider = QFrame()
+        divider.setFrameShape(QFrame.Shape.HLine)
+        divider.setFixedHeight(1)
+        divider.setStyleSheet(f"background-color: {TEXT_SECONDARY}; border: none;")
+        layout.addWidget(divider)
+
+        # "What to say:" sub-header
+        say_header = QLabel("What to say:")
+        say_header.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; font-size: 10px; padding: 2px 0 0 0;"
+        )
+        layout.addWidget(say_header)
+
+        # Spoken-ready answer (green, bold — bottom section)
+        self._answer_label = QLabel()
+        self._answer_label.setWordWrap(True)
+        self._answer_label.setTextFormat(Qt.TextFormat.RichText)
+        self._answer_label.setStyleSheet(
+            f"color: {ACCENT_GREEN}; font-size: 13px; font-weight: bold; padding: 0;"
+        )
+        layout.addWidget(self._answer_label)
+
+    # ── public setters (called during streaming) ──────────────────────
+
+    def set_loading(self) -> None:
+        gen = f'<span style="color:{TEXT_SECONDARY}">Generating…</span>'
+        self._bullets_label.setText(gen)
+        self._answer_label.setText(gen)
+
+    def set_dual_response(self, bullets: str, answer: str,
+                          streaming: bool = True) -> None:
+        """Update both the bullets and answer sections simultaneously."""
+        # Bullets
+        if bullets:
+            b_html = _md_to_html(bullets)
+            if streaming:
+                b_html += f' <span style="color:{ACCENT_BLUE}">▌</span>'
+            self._bullets_label.setText(b_html)
+        elif streaming:
+            self._bullets_label.setText(
+                f'<span style="color:{TEXT_SECONDARY}">Generating…</span>'
+            )
+        # Answer
+        if answer:
+            a_html = _md_to_html(answer)
+            if streaming:
+                a_html += f' <span style="color:{ACCENT_BLUE}">▌</span>'
+            self._answer_label.setText(a_html)
+        elif streaming:
+            self._answer_label.setText(
+                f'<span style="color:{TEXT_SECONDARY}">Generating…</span>'
+            )
+
+
+def _md_to_html(text: str) -> str:
+    """Minimal markdown → html: bullets, bold."""
+    import re
+    lines = text.split("\n")
+    out: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("- ") or stripped.startswith("• "):
+            stripped = stripped[2:]
+            out.append(f"&bull; {stripped}<br/>")
+        elif stripped.startswith("* "):
+            stripped = stripped[2:]
+            out.append(f"&bull; {stripped}<br/>")
+        elif stripped:
+            out.append(f"{stripped}<br/>")
+    html = "".join(out)
+    html = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", html)
+    return html
+
+
 class AlertCard(QFrame):
     """
-    Displays a detected question and the AI-suggested talking points.
-    Stays visible until the user clicks the dismiss button.
+    Scrollable Q&A history card.
+
+    Stacks multiple _QABlock widgets; auto-updates when new questions arrive.
+    'Got it' button hides the card and clears history.
     """
 
     dismissed = pyqtSignal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._active_block: _QABlock | None = None
+        self._blocks: list[_QABlock] = []
         self._build_ui()
         self.hide()
 
@@ -144,15 +286,14 @@ class AlertCard(QFrame):
                 background-color: {CARD_BG};
                 border: 1px solid {ACCENT_YELLOW};
                 border-radius: 8px;
-                padding: 10px;
             }}
             """
         )
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(6, 6, 6, 6)
+        outer.setSpacing(4)
 
-        # Header row
+        # Header row (outside scroll)
         header_row = QHBoxLayout()
         icon_lbl = QLabel("❓")
         icon_lbl.setStyleSheet("font-size: 16px;")
@@ -163,7 +304,6 @@ class AlertCard(QFrame):
         header_row.addWidget(icon_lbl)
         header_row.addWidget(self._header_label, 1)
 
-        # Dismiss button (replaces the old timer label)
         self._dismiss_btn = QPushButton("✕ Got it")
         self._dismiss_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._dismiss_btn.setStyleSheet(
@@ -184,94 +324,110 @@ class AlertCard(QFrame):
         )
         self._dismiss_btn.clicked.connect(self.dismiss)
         header_row.addWidget(self._dismiss_btn)
-        layout.addLayout(header_row)
+        outer.addLayout(header_row)
 
-        # Question text
-        self._question_label = QLabel()
-        self._question_label.setWordWrap(True)
-        self._question_label.setStyleSheet(
-            f"color: {TEXT_PRIMARY}; font-size: 13px; font-style: italic; padding: 2px 0;"
+        # Scrollable history area
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._scroll.setStyleSheet(
+            f"""
+            QScrollArea {{
+                background-color: {CARD_BG};
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: {CARD_BG};
+                width: 6px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {TEXT_SECONDARY};
+                border-radius: 3px;
+                min-height: 20px;
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+            """
         )
-        layout.addWidget(self._question_label)
 
-        # Divider
-        divider = QFrame()
-        divider.setFrameShape(QFrame.Shape.HLine)
-        divider.setStyleSheet(f"color: {TEXT_SECONDARY};")
-        layout.addWidget(divider)
+        self._history_widget = QWidget()
+        self._history_widget.setStyleSheet(f"background-color: {CARD_BG};")
+        self._history_layout = QVBoxLayout(self._history_widget)
+        self._history_layout.setContentsMargins(0, 0, 0, 0)
+        self._history_layout.setSpacing(6)
+        self._history_layout.addStretch()  # keeps blocks top-aligned
 
-        # Response / talking points
-        self._response_label = QLabel()
-        self._response_label.setWordWrap(True)
-        self._response_label.setTextFormat(Qt.TextFormat.RichText)
-        self._response_label.setStyleSheet(
-            f"color: {TEXT_PRIMARY}; font-size: 13px; line-height: 1.5;"
-        )
-        layout.addWidget(self._response_label)
+        self._scroll.setWidget(self._history_widget)
+        outer.addWidget(self._scroll, 1)
+
+    # ── auto-scroll helper ────────────────────────────────────────────
+
+    def _is_near_bottom(self) -> bool:
+        """True when the user hasn't scrolled up (or is within 40px of the bottom)."""
+        sb = self._scroll.verticalScrollBar()
+        return sb.value() >= sb.maximum() - 40
+
+    def _scroll_to_bottom(self, force: bool = False) -> None:
+        """Scroll to bottom only if user is already near the bottom (or *force*)."""
+        if not force and not self._is_near_bottom():
+            return
+        QTimer.singleShot(0, lambda: self._scroll.verticalScrollBar().setValue(
+            self._scroll.verticalScrollBar().maximum()
+        ))
 
     # ── public API ────────────────────────────────────────────────────
 
     def show_question(self, question: str) -> None:
+        """Append a new Q&A block for an incoming question."""
         self._header_label.setText("Question Detected")
         self._header_label.setStyleSheet(
             f"color: {ACCENT_YELLOW}; font-size: 12px; font-weight: bold;"
         )
-        self._question_label.setText(f'"{question}"')
-        self._response_label.setText(
-            f'<span style="color:{TEXT_SECONDARY}">Generating talking points…</span>'
-        )
-        self._dismiss_btn.setVisible(False)  # hide until response is ready
+        block = _QABlock(question)
+        block.set_loading()
+        # Insert before the trailing stretch
+        self._history_layout.insertWidget(self._history_layout.count() - 1, block)
+        self._blocks.append(block)
+        self._active_block = block
+        self._dismiss_btn.setVisible(True)
         self.show()
+        # Force-scroll for a brand-new question so the user sees it
+        self._scroll_to_bottom(force=True)
 
-    def update_response(self, response_text: str, streaming: bool = True) -> None:
-        """Update the response area. ``response_text`` may contain markdown-ish bullets."""
-        html = self._md_to_html(response_text)
-        if streaming:
-            html += f' <span style="color:{ACCENT_BLUE}">▌</span>'
-        self._response_label.setText(html)
+    def update_response(self, bullets: str, answer: str,
+                        streaming: bool = True) -> None:
+        if self._active_block and not self._active_block._is_redirect:
+            self._active_block.set_dual_response(bullets, answer, streaming)
+            self._scroll_to_bottom()
 
-    def finish_response(self, response_text: str) -> None:
-        self.update_response(response_text, streaming=False)
-        self._dismiss_btn.setVisible(True)  # show button once response is complete
+    def finish_response(self, bullets: str, answer: str) -> None:
+        self.update_response(bullets, answer, streaming=False)
+        self._dismiss_btn.setVisible(True)
 
     def dismiss(self) -> None:
         self.hide()
+        self.clear_history()
         self.dismissed.emit()
 
     def show_redirect(self, question: str, redirect_to: str) -> None:
-        """Show a brief notification that this question is for another team member."""
-        self._question_label.setText(f'"{question}"')
-        self._header_label.setText("Not Your Question")
-        self._header_label.setStyleSheet(
-            f"color: {TEXT_SECONDARY}; font-size: 12px; font-weight: bold;"
-        )
-        self._response_label.setText(
-            f'<span style="color:{TEXT_SECONDARY}">This one\'s for '
-            f'<b style="color:{ACCENT_BLUE}">{redirect_to}</b> — sit tight.</span>'
-        )
+        """Append a redirect notification block."""
+        block = _QABlock(question, is_redirect=True, redirect_to=redirect_to)
+        self._history_layout.insertWidget(self._history_layout.count() - 1, block)
+        self._blocks.append(block)
+        self._active_block = block
         self._dismiss_btn.setVisible(True)
         self.show()
+        self._scroll_to_bottom(force=True)
 
-    @staticmethod
-    def _md_to_html(text: str) -> str:
-        """Minimal markdown → html: bullets, bold."""
-        lines = text.split("\n")
-        out: list[str] = []
-        for line in lines:
-            stripped = line.strip()
-            if stripped.startswith("- ") or stripped.startswith("• "):
-                stripped = stripped[2:]
-                out.append(f"&bull; {stripped}<br/>")
-            elif stripped.startswith("* "):
-                stripped = stripped[2:]
-                out.append(f"&bull; {stripped}<br/>")
-            elif stripped:
-                out.append(f"{stripped}<br/>")
-        html = "".join(out)
-        # Bold markers **text**
-        import re
-        html = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", html)
-        return html
+    def clear_history(self) -> None:
+        """Remove all Q&A blocks."""
+        for block in self._blocks:
+            self._history_layout.removeWidget(block)
+            block.deleteLater()
+        self._blocks.clear()
+        self._active_block = None
 
 
 # ── Status Bar ────────────────────────────────────────────────────────

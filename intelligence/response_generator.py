@@ -1,11 +1,14 @@
 """
 Generate concise talking-point responses by combining RAG retrieval
-with GPT-4o streaming.
+with GPT-4o streaming.  Supports dual parallel streaming: bullet
+talking-points via GPT-4o-mini and a spoken-ready answer via GPT-4o.
 """
 
 from __future__ import annotations
 
 import logging
+import queue
+import threading
 from typing import Generator
 
 from openai import OpenAI
@@ -17,20 +20,41 @@ from knowledge.knowledge_base import KnowledgeBase
 
 log = logging.getLogger(__name__)
 
-SYSTEM_PROMPT_TEMPLATE = """\
+# ── Prompt: bullet talking-point summaries (GPT-4o-mini) ────────────
+BULLETS_PROMPT_TEMPLATE = """\
+You are a real-time meeting assistant helping {display_name}, the {role}, \
+prepare talking-point bullets about the NASA TerraScan report during a live \
+Microsoft Teams call.
+
+{display_name}'s expertise: {expertise}
+
+OUTPUT — bullet list ONLY, nothing else:
+- 3–5 bullet points.
+- Each bullet is a self-contained talking point with supporting detail.
+- Cite the page or section where relevant (e.g. "(Page 45)").
+- Only cover topics within {display_name}'s domain as {role}.
+- If this is a follow-up, provide NEW information only — never restate points already covered in previous answers.
+- If the document has no relevant info, say so in a single bullet.
+- Never fabricate data.
+"""
+
+# ── Prompt: spoken-ready answer paragraph (GPT-4o) ──────────────────
+ANSWER_PROMPT_TEMPLATE = """\
 You are a real-time meeting assistant helping {display_name}, the {role}, \
 answer questions about the NASA TerraScan report during a live Microsoft Teams call.
 
 {display_name}'s expertise: {expertise}
 
-RULES:
-- Be concise: 2-4 bullet points max.
-- Each bullet should be a clear, self-contained talking point the presenter can say aloud.
-- Only suggest talking points within {display_name}'s domain as {role}.
-- Do NOT suggest talking points about areas other team members handle.
-- Cite the page number or section if known.
-- If the document does not contain relevant info, say so briefly.
-- Never fabricate data – only use what is in the provided document excerpts.
+OUTPUT — a single spoken-ready paragraph ONLY, nothing else:
+- Use as many sentences as the question warrants — be concise for simple \
+questions, thorough for complex ones (typically 2–8 sentences).
+- This is what {display_name} should SAY OUT LOUD — natural, conversational, \
+comprehensive.
+- Cover only topics within {display_name}'s domain as {role}.
+- If this is a follow-up, answer the NEW question directly — do not repeat or \
+summarise what was already said.
+- If the document has no relevant info, say so naturally.
+- Never fabricate data.
 """
 
 
@@ -39,28 +63,72 @@ class ResponseGenerator:
         self._client = OpenAI(api_key=config.OPENAI_API_KEY)
         self._kb = kb
         self._profile = user_profile
-        self._system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
-            display_name=user_profile.display_name.split()[0],
+        first_name = user_profile.display_name.split()[0]
+        self._bullets_prompt = BULLETS_PROMPT_TEMPLATE.format(
+            display_name=first_name,
+            role=user_profile.role,
+            expertise=user_profile.expertise,
+        )
+        self._answer_prompt = ANSWER_PROMPT_TEMPLATE.format(
+            display_name=first_name,
             role=user_profile.role,
             expertise=user_profile.expertise,
         )
 
-    def generate(self, question: str, context: str) -> str:
-        """
-        Blocking call: retrieve relevant chunks, call GPT-4o,
-        return the full response string.
-        """
-        chunks = self._retrieve(question)
-        return self._call_llm(question, context, chunks)
+    # ── public API ────────────────────────────────────────────────────
 
-    def generate_stream(
-        self, question: str, context: str
-    ) -> Generator[str, None, None]:
+    def generate_dual_stream(
+        self,
+        question: str,
+        context: str,
+        prior_qa: list[tuple[str, str]] | None = None,
+    ) -> tuple[queue.Queue, queue.Queue]:
+        """Start two parallel LLM streams and return (bullet_q, answer_q).
+
+        Each queue receives incremental string deltas.  A *None* sentinel
+        signals that the respective stream is finished.
         """
-        Yield incremental text deltas as GPT-4o streams its response.
-        """
-        chunks = self._retrieve(question)
-        yield from self._call_llm_stream(question, context, chunks)
+        excerpts = self._retrieve(question)
+
+        bullet_q: queue.Queue[str | None] = queue.Queue()
+        answer_q: queue.Queue[str | None] = queue.Queue()
+
+        def _stream_to_queue(
+            sys_prompt: str, model: str, max_tokens: int,
+            q: queue.Queue,
+        ) -> None:
+            try:
+                msgs = self._build_messages(
+                    sys_prompt, question, context, excerpts, prior_qa,
+                )
+                stream = self._client.chat.completions.create(
+                    model=model, messages=msgs,
+                    temperature=0.3, max_tokens=max_tokens, stream=True,
+                )
+                for event in stream:
+                    delta = event.choices[0].delta
+                    if delta and delta.content:
+                        q.put(delta.content)
+            except Exception:
+                log.exception("LLM stream error (%s)", model)
+            finally:
+                q.put(None)  # sentinel
+
+        threading.Thread(
+            target=_stream_to_queue,
+            args=(self._bullets_prompt, config.BULLETS_MODEL,
+                  config.BULLETS_MAX_TOKENS, bullet_q),
+            daemon=True,
+        ).start()
+
+        threading.Thread(
+            target=_stream_to_queue,
+            args=(self._answer_prompt, config.RESPONSE_MODEL,
+                  config.RESPONSE_MAX_TOKENS, answer_q),
+            daemon=True,
+        ).start()
+
+        return bullet_q, answer_q
 
     # ── retrieval ─────────────────────────────────────────────────────
 
@@ -69,7 +137,6 @@ class ResponseGenerator:
         if not results:
             return "(No relevant document excerpts found.)"
 
-        # Per-user filtering: re-rank and keep top-K
         results = UserContextFilter.filter(
             results, self._profile, top_k=config.SIMILARITY_TOP_K
         )
@@ -83,41 +150,25 @@ class ResponseGenerator:
             parts.append(f"{header}\n{chunk.text}")
         return "\n\n---\n\n".join(parts)
 
-    # ── LLM calls ────────────────────────────────────────────────────
+    # ── LLM message building ─────────────────────────────────────────
 
-    def _build_messages(self, question: str, context: str, excerpts: str):
-        user_msg = (
-            f"## Question being asked\n{question}\n\n"
-            f"## Recent meeting transcript (for context)\n{context}\n\n"
-            f"## Relevant document excerpts\n{excerpts}"
-        )
+    def _build_messages(
+        self, system_prompt: str,
+        question: str, context: str, excerpts: str,
+        prior_qa: list[tuple[str, str]] | None = None,
+    ):
+        parts = []
+        if prior_qa:
+            parts.append("## Previous Q&A in this session (for context — do NOT repeat)")
+            for prev_q, prev_a in prior_qa:
+                trimmed = prev_a[:200] + "…" if len(prev_a) > 200 else prev_a
+                parts.append(f"Q: {prev_q}\nA: {trimmed}")
+            parts.append("")
+        parts.append(f"## Question being asked\n{question}")
+        parts.append(f"## Recent meeting transcript (for context)\n{context}")
+        parts.append(f"## Relevant document excerpts\n{excerpts}")
+        user_msg = "\n\n".join(parts)
         return [
-            {"role": "system", "content": self._system_prompt},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_msg},
         ]
-
-    def _call_llm(self, question: str, context: str, excerpts: str) -> str:
-        msgs = self._build_messages(question, context, excerpts)
-        resp = self._client.chat.completions.create(
-            model=config.RESPONSE_MODEL,
-            messages=msgs,
-            temperature=0.3,
-            max_tokens=config.RESPONSE_MAX_TOKENS,
-        )
-        return resp.choices[0].message.content.strip()
-
-    def _call_llm_stream(
-        self, question: str, context: str, excerpts: str
-    ) -> Generator[str, None, None]:
-        msgs = self._build_messages(question, context, excerpts)
-        stream = self._client.chat.completions.create(
-            model=config.RESPONSE_MODEL,
-            messages=msgs,
-            temperature=0.3,
-            max_tokens=config.RESPONSE_MAX_TOKENS,
-            stream=True,
-        )
-        for event in stream:
-            delta = event.choices[0].delta
-            if delta and delta.content:
-                yield delta.content
