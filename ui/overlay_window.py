@@ -211,23 +211,11 @@ class OverlayWindow(QWidget):
 
     @pyqtSlot(object)
     def _on_response(self, resp: SuggestedResponse) -> None:
-        log.debug("UI _on_response: qid=%d is_streaming=%s redirect_to=%s hint_to=%s "
+        log.debug("UI _on_response: qid=%d is_streaming=%s hint_to=%s "
                   "current_qid=%d bullets=%d answer=%d",
-                  resp.question_id, resp.is_streaming, resp.redirect_to, resp.hint_to,
+                  resp.question_id, resp.is_streaming, resp.hint_to,
                   self._current_question_id, len(resp.bullets), len(resp.answer))
 
-        # Redirect: question belongs to another user — show ONCE per question
-        if resp.redirect_to:
-            if self._redirect_shown_for_qid == resp.question_id:
-                log.debug("UI REDIRECT DEDUP: qid=%d redirect already shown, skipping",
-                          resp.question_id)
-                return
-            log.info("UI REDIRECT: qid=%d → '%s' (showing redirect card)",
-                     resp.question_id, resp.redirect_to)
-            self._redirect_shown_for_qid = resp.question_id
-            self._current_question_id = resp.question_id
-            self.alert_card.show_redirect(resp.question, resp.redirect_to)
-            return
         # New question — append a new block
         if resp.question_id != self._current_question_id:
             log.info("UI NEW QUESTION: qid=%d hint_to='%s' (creating QA block)",
