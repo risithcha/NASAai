@@ -512,8 +512,24 @@ class AlertCard(QFrame):
         self.dismissed.emit()
 
     def show_redirect(self, question: str, redirect_to: str) -> None:
-        """Append a redirect notification block."""
-        log.info("AlertCard show_redirect: '%s' → '%s'", question[:60], redirect_to)
+        """Append a redirect notification block.
+
+        If the active block is a non-redirect QA block (e.g. a stale
+        "Generating..." placeholder from before routing finished), remove
+        it first so we don't leave an orphaned block.
+        """
+        log.info("AlertCard show_redirect: '%s' → '%s' (active_block=%s)",
+                 question[:60], redirect_to,
+                 "redirect" if self._active_block and self._active_block._is_redirect
+                 else "qa" if self._active_block else "None")
+        # Remove stale placeholder QA block if one exists
+        if self._active_block and not self._active_block._is_redirect:
+            log.debug("AlertCard show_redirect: removing stale QA block before redirect")
+            self._history_layout.removeWidget(self._active_block)
+            self._active_block.deleteLater()
+            self._blocks.remove(self._active_block)
+            self._active_block = None
+
         block = _QABlock(question, is_redirect=True, redirect_to=redirect_to)
         self._history_layout.insertWidget(self._history_layout.count() - 1, block)
         self._blocks.append(block)

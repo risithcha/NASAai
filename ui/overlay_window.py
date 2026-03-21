@@ -60,6 +60,7 @@ class OverlayWindow(QWidget):
         self._stealth_active = False
         self._user_profile = user_profile
         self._current_question_id: int = -1
+        self._redirect_shown_for_qid: int = -1   # tracks which qid already has a redirect card
         self._build_ui()
         self._connect_signals()
 
@@ -217,12 +218,13 @@ class OverlayWindow(QWidget):
 
         # Redirect: question belongs to another user — show ONCE per question
         if resp.redirect_to:
-            if self._current_question_id == resp.question_id:
-                log.debug("UI REDIRECT DEDUP: qid=%d already shown, skipping",
+            if self._redirect_shown_for_qid == resp.question_id:
+                log.debug("UI REDIRECT DEDUP: qid=%d redirect already shown, skipping",
                           resp.question_id)
                 return
             log.info("UI REDIRECT: qid=%d → '%s' (showing redirect card)",
                      resp.question_id, resp.redirect_to)
+            self._redirect_shown_for_qid = resp.question_id
             self._current_question_id = resp.question_id
             self.alert_card.show_redirect(resp.question, resp.redirect_to)
             return
