@@ -143,22 +143,12 @@ class Pipeline:
                  detected.confidence, detected.question_text[:120])
         self._last_question_time = time.time()
 
-        # Pre-fetch KB results once — shared by routing and response generation
-        kb_results = []
-        try:
-            kb_results = self._kb.search(
-                detected.question_text, k=config.SIMILARITY_FETCH_K,
-            )
-        except Exception:
-            log.debug("KB pre-fetch failed", exc_info=True)
-
         self._question_counter += 1
         qid = self._question_counter
 
-        # Start routing + response generation in PARALLEL.
-        # Routing runs on its own thread; response starts immediately
-        # with hint=None.  When routing finishes, hint is injected into
-        # subsequent streaming emissions.
+        # Start routing FIRST on its own thread (it does its own KB lookup
+        # internally) so it runs in PARALLEL with the main-thread KB search
+        # below.  This saves ~500ms vs the old sequential approach.
         routing_result: dict = {"hint": None, "done": False}
         routing_event = threading.Event()   # signalled when routing completes
         route_start = time.time()
@@ -167,7 +157,7 @@ class Pipeline:
             log.debug("ROUTE START qid=%d t=%.3fs", qid, time.time() - route_start)
             try:
                 redirect, hint = self._smart_route_question(
-                    detected.question_text, kb_results=kb_results,
+                    detected.question_text, kb_results=None,
                 )
                 elapsed = time.time() - route_start
                 if redirect:
@@ -192,6 +182,15 @@ class Pipeline:
 
         threading.Thread(target=_route_async, daemon=True, name=f"route-q{qid}").start()
 
+        # KB search for response generation (runs in parallel with routing above)
+        kb_results = []
+        try:
+            kb_results = self._kb.search(
+                detected.question_text, k=config.SIMILARITY_FETCH_K,
+            )
+        except Exception:
+            log.debug("KB pre-fetch failed", exc_info=True)
+
         # Fire off streaming immediately (don't wait for routing)
         if self._on_response:
             t = threading.Thread(
@@ -215,10 +214,12 @@ class Pipeline:
         stream_start = time.time()
         log.info("STREAM START qid=%d", qid)
 
-        # Brief wait for routing — avoids the UI creating a block with no hint
-        # if routing finishes within a reasonable window.
-        if not routing_event.wait(timeout=0.35):
-            log.debug("STREAM qid=%d: routing not ready after 350ms, proceeding without hint",
+        # Brief wait for routing — if it finishes in time, the block
+        # is created WITH the hint so the user sees it immediately.
+        # Routing now runs concurrently with KB fetch so it typically
+        # finishes much faster than before.
+        if not routing_event.wait(timeout=0.8):
+            log.debug("STREAM qid=%d: routing not ready after 800ms, proceeding without hint",
                       qid)
         else:
             log.debug("STREAM qid=%d: routing ready before first emit (%.0fms)",
