@@ -1,46 +1,91 @@
-01:13:04  INFO     main  Debug log → C:\Users\santh\OneDrive\Desktop\NASAai\nasaai_debug.log
-01:13:04  INFO     settings.settings_manager  Settings loaded from C:\Users\santh\OneDrive\Desktop\NASAai\data\settings.json (43 keys)
-01:13:04  WARNING  main  PDF not found at C:\Users\Risith\Desktop\NASAai\data\nasa_report.pdf — knowledge base will be empty.  Place your NASA PDF there and re-run.
-01:13:05  INFO     faiss.loader  Loading faiss with AVX2 support.
-01:13:05  INFO     faiss.loader  Successfully loaded faiss with AVX2 support.
-01:13:05  INFO     accounts.user_profile  Loaded profile: risith (Technical Lead) — 4 sections, 45 keywords, 15 excludes
-01:13:05  INFO     accounts.user_profile  Loaded profile: santhosh (Mission Lead) — 5 sections, 39 keywords, 14 excludes
-01:13:05  INFO     accounts.user_profile  Loaded profile: ritvik (Operations & Business Lead) — 10 sections, 36 keywords, 16 excludes
-01:13:07  INFO     accounts.user_profile  Active user set to: Santhosh Ilaiyaraja (Mission Lead)
-01:13:07  INFO     main  Signed in as Santhosh Ilaiyaraja (Mission Lead)
-01:13:07  INFO     main  Preparing knowledge base …
-01:13:07  INFO     knowledge.knowledge_base  Knowledge base loaded: 128 chunks
-01:13:07  INFO     main  Knowledge base ready  (128 chunks indexed)
-01:13:07  INFO     ui.overlay_window  Display affinity set to 0x11 (stealth=True)
-01:13:07  INFO     main  Overlay window visible — listening …
-01:13:07  INFO     main  Deepgram connected
-01:13:07  INFO     audio.audio_capture  AudioCapture started  (loopback=Headphones (Realtek(R) Audio) [Loopback], mic=Microphone (Realtek(R) Audio))
-01:13:07  INFO     main  Audio capture started
-01:13:07  INFO     intelligence.pipeline  Intelligence pipeline started
-01:13:07  INFO     main  Intelligence pipeline running
-01:13:07  INFO     transcription.transcription_service  Connected to Deepgram streaming endpoint
-01:13:08  INFO     ui.overlay_window  Display affinity set to 0x0 (stealth=False)
-01:13:18  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay.
-01:13:20  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | So are you ready?
-01:13:40  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | You brought on your mentor, Sharita Kankang Gay, early in the process. As the operations lead, how d
-01:13:40  INFO     intelligence.question_detector  DETECT REGEX HIT (38 words, 0ms): You brought on your mentor, Sharita Kankang Gay, early in the process. As the operations lead, how d
-01:13:40  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): You brought on your mentor, Sharita Kankang Gay, early in the process. As the operations lead, how did you balance the t
-01:13:41  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
-01:13:41  INFO     intelligence.pipeline  STREAM START qid=1
-01:13:41  INFO     ui.overlay_window  UI NEW QUESTION: qid=1 hint_to='' (creating QA block)
-01:13:41  INFO     ui.ui_components  AlertCard show_question: 'You brought on your mentor, Sharita Kankang Gay, early in th' hint_to='' (block count: 0)
-01:13:41  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-01:13:41  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-01:13:42  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=ritvik  conf=1.00  (962ms) | You brought on your mentor, Sharita Kankang Gay, early in the process. As the op
-01:13:42  INFO     intelligence.pipeline  LLM ROUTE → REDIRECT to Ritvik (Operations & Business Lead) (conf=1.00)
-01:13:42  INFO     intelligence.pipeline  ROUTE → REDIRECT qid=1 to 'Ritvik (Operations & Business Lead)' (963ms) — will show redirect card
-01:13:42  INFO     intelligence.pipeline  STREAM qid=1: hard redirect arrived MID-STREAM to 'Ritvik (Operations & Business Lead)' at 966ms — bailing
-01:13:42  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
-01:13:42  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Sharita Kankang Gay, early in th' → 'Ritvik (Operations & Business Lead)' (active_block=qa)
-01:13:42  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-01:13:57  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Yeah. Okay. So it blocked it, like, told you that it was for him.
-01:13:58  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-01:14:13  INFO     main  Shutting down …
-01:14:13  INFO     audio.audio_capture  AudioCapture stopped
-01:14:13  INFO     transcription.transcription_service  Deepgram listener exited
-01:14:13  INFO     main  Goodbye.
+01:19:03  INFO     main  Debug log → C:\Users\santh\OneDrive\Desktop\NASAai\nasaai_debug.log
+01:19:03  INFO     settings.settings_manager  Settings loaded from C:\Users\santh\OneDrive\Desktop\NASAai\data\settings.json (43 keys)
+01:19:03  WARNING  main  PDF not found at C:\Users\Risith\Desktop\NASAai\data\nasa_report.pdf — knowledge base will be empty.  Place your NASA PDF there and re-run.
+01:19:04  INFO     faiss.loader  Loading faiss with AVX2 support.
+01:19:04  INFO     faiss.loader  Successfully loaded faiss with AVX2 support.
+01:19:04  INFO     accounts.user_profile  Loaded profile: risith (Technical Lead) — 4 sections, 45 keywords, 15 excludes
+01:19:04  INFO     accounts.user_profile  Loaded profile: santhosh (Mission Lead) — 5 sections, 39 keywords, 14 excludes
+01:19:04  INFO     accounts.user_profile  Loaded profile: ritvik (Operations & Business Lead) — 10 sections, 36 keywords, 16 excludes
+01:19:05  INFO     accounts.user_profile  Active user set to: Santhosh Ilaiyaraja (Mission Lead)
+01:19:05  INFO     main  Signed in as Santhosh Ilaiyaraja (Mission Lead)
+01:19:05  INFO     main  Preparing knowledge base …
+01:19:05  INFO     knowledge.knowledge_base  Knowledge base loaded: 128 chunks
+01:19:05  INFO     main  Knowledge base ready  (128 chunks indexed)
+01:19:05  INFO     ui.overlay_window  Display affinity set to 0x11 (stealth=True)
+01:19:05  INFO     main  Overlay window visible — listening …
+01:19:05  INFO     main  Deepgram connected
+01:19:06  INFO     transcription.transcription_service  Connected to Deepgram streaming endpoint
+01:19:06  INFO     audio.audio_capture  AudioCapture started  (loopback=Headphones (Realtek(R) Audio) [Loopback], mic=Microphone (Realtek(R) Audio))
+01:19:06  INFO     main  Audio capture started
+01:19:06  INFO     intelligence.pipeline  Intelligence pipeline started
+01:19:06  INFO     main  Intelligence pipeline running
+01:19:07  INFO     ui.overlay_window  Display affinity set to 0x0 (stealth=False)
+01:19:13  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Did you launch it, Santosh? Okay.
+01:19:14  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:19:14  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Ready?
+01:19:37  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | You brought on your mentor, the process. As the operations lead, how did you balance the team's reli
+01:19:37  INFO     intelligence.question_detector  DETECT REGEX HIT (40 words, 0ms): You brought on your mentor, the process. As the operations lead, how did you balance the team's reli
+01:19:37  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): You brought on your mentor, the process. As the operations lead, how did you balance the team's reliance on its distribu
+01:19:37  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+01:19:37  INFO     intelligence.pipeline  STREAM START qid=1
+01:19:38  INFO     ui.overlay_window  UI NEW QUESTION: qid=1 hint_to='' (creating QA block)
+01:19:38  INFO     ui.ui_components  AlertCard show_question: 'You brought on your mentor, the process. As the operations l' hint_to='' (block count: 0)
+01:19:38  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:19:38  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:19:38  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=ritvik  conf=0.50  (888ms) | You brought on your mentor, the process. As the operations lead, how did you bal
+01:19:38  INFO     intelligence.pipeline  LLM ROUTE → HINT Ritvik (Operations & Business Lead) (conf=0.50)
+01:19:38  INFO     intelligence.pipeline  ROUTE → HINT qid=1 hint='Ritvik (Operations & Business Lead)' (889ms) — soft banner
+01:19:38  INFO     intelligence.pipeline  STREAM qid=1: hint CHANGED mid-stream (None→Ritvik (Operations & Business Lead)) at 915ms
+01:19:38  INFO     ui.ui_components  QABlock update_hint: '' → 'Ritvik (Operations & Business Lead)' (562ms after block created)
+01:19:38  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:19:41  INFO     intelligence.pipeline  STREAM END qid=1  3.6s  bullets=1163 chars  answer=933 chars  final_hint=Ritvik (Operations & Business Lead)
+01:19:56  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Is it working? Yeah. What about you, Isaac? Great. For me, I my response. Balancing the team's relia
+01:19:56  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:20:02  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Yes. Maybe you yeah. I didn't know that until, like, a few minutes ago. So
+01:20:02  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:20:32  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | yeah. Now let's just think. Looking at the energy budget for flight one, the cruise service draw 188
+01:20:32  INFO     intelligence.question_detector  DETECT REGEX HIT (52 words, 0ms): yeah. Now let's just think. Looking at the energy budget for flight one, the cruise service draw 188
+01:20:32  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): yeah. Now let's just think. Looking at the energy budget for flight one, the cruise service draw 188 watts for twenty mi
+01:20:33  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+01:20:33  INFO     intelligence.pipeline  STREAM START qid=2
+01:20:33  INFO     ui.overlay_window  UI NEW QUESTION: qid=2 hint_to='' (creating QA block)
+01:20:33  INFO     ui.ui_components  AlertCard show_question: 'yeah. Now let's just think. Looking at the energy budget for' hint_to='' (block count: 1)
+01:20:34  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:20:34  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=santhosh  conf=1.00  (733ms) | yeah. Now let's just think. Looking at the energy budget for flight one, the cru
+01:20:34  INFO     intelligence.pipeline  ROUTE → MINE qid=2 (733ms) — no redirect/hint
+01:20:34  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:20:34  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:20:38  INFO     intelligence.pipeline  STREAM END qid=2  5.2s  bullets=1295 chars  answer=783 chars  final_hint=None
+01:20:57  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Where we get where we get it. Yes. What about you? Is, like, what is the view? It's it's for Santosh
+01:20:57  INFO     intelligence.question_detector  DETECT REGEX HIT (23 words, 0ms): Where we get where we get it. Yes. What about you? Is, like, what is the view? It's it's for Santosh
+01:20:57  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): Where we get where we get it. Yes. What about you? Is, like, what is the view? It's it's for Santosh Mission Lead.
+01:20:58  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+01:20:58  INFO     intelligence.pipeline  STREAM START qid=3
+01:20:58  INFO     ui.overlay_window  UI NEW QUESTION: qid=3 hint_to='' (creating QA block)
+01:20:58  INFO     ui.ui_components  AlertCard show_question: 'Where we get where we get it. Yes. What about you? Is, like,' hint_to='' (block count: 2)
+01:20:59  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:20:59  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=santhosh  conf=1.00  (688ms) | Where we get where we get it. Yes. What about you? Is, like, what is the view? I
+01:20:59  INFO     intelligence.pipeline  ROUTE → MINE qid=3 (689ms) — no redirect/hint
+01:20:59  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:20:59  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:21:03  INFO     intelligence.pipeline  STREAM END qid=3  5.1s  bullets=1472 chars  answer=701 chars  final_hint=None
+01:21:46  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay. Okay. Now now one last test. Okay. Okay. During the detailed design phase, you the center of g
+01:21:46  INFO     intelligence.question_detector  DETECT REGEX HIT (65 words, 0ms): Okay. Okay. Now now one last test. Okay. Okay. During the detailed design phase, you the center of g
+01:21:46  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): Okay. Okay. Now now one last test. Okay. Okay. During the detailed design phase, you the center of gravity to be 35.49 c
+01:21:47  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+01:21:47  INFO     intelligence.pipeline  STREAM START qid=4
+01:21:47  INFO     ui.overlay_window  UI NEW QUESTION: qid=4 hint_to='' (creating QA block)
+01:21:47  INFO     ui.ui_components  AlertCard show_question: 'Okay. Okay. Now now one last test. Okay. Okay. During the de' hint_to='' (block count: 3)
+01:21:47  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:21:48  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:21:48  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=risith  conf=1.00  (930ms) | Okay. Okay. Now now one last test. Okay. Okay. During the detailed design phase,
+01:21:48  INFO     intelligence.pipeline  LLM ROUTE → REDIRECT to Risith (Technical Lead) (conf=1.00)
+01:21:48  INFO     intelligence.pipeline  ROUTE → REDIRECT qid=4 to 'Risith (Technical Lead)' (930ms) — showing as hint banner
+01:21:48  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:21:48  INFO     intelligence.pipeline  STREAM qid=4: hint CHANGED mid-stream (None→Risith (Technical Lead)) at 964ms
+01:21:48  INFO     ui.ui_components  QABlock update_hint: '' → 'Risith (Technical Lead)' (610ms after block created)
+01:21:50  INFO     intelligence.pipeline  STREAM END qid=4  3.0s  bullets=1206 chars  answer=648 chars  final_hint=Risith (Technical Lead)
+01:22:02  INFO     main  Shutting down …
+01:22:03  INFO     audio.audio_capture  AudioCapture stopped
+01:22:03  INFO     transcription.transcription_service  Deepgram listener exited
+01:22:03  INFO     main  Goodbye.
