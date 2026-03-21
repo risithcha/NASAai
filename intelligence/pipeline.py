@@ -159,34 +159,46 @@ class Pipeline:
         # Routing runs on its own thread; response starts immediately
         # with hint=None.  When routing finishes, hint is injected into
         # subsequent streaming emissions.
-        routing_result: dict = {"hint": None, "done": False}
+        routing_result: dict = {"hint": None, "redirect": None, "done": False}
+        routing_event = threading.Event()   # signalled when routing completes
+        route_start = time.time()
 
         def _route_async() -> None:
+            log.debug("ROUTE START qid=%d t=%.3fs", qid, time.time() - route_start)
             try:
                 redirect, hint = self._smart_route_question(
                     detected.question_text, kb_results=kb_results,
                 )
+                elapsed = time.time() - route_start
                 if redirect:
-                    log.info("ROUTE → REDIRECT qid=%d to %s (still answering)", qid, redirect)
-                    routing_result["hint"] = redirect
+                    log.info("ROUTE → REDIRECT qid=%d to '%s' (%.0fms) — will show redirect card",
+                             qid, redirect, elapsed * 1000)
+                    routing_result["redirect"] = redirect
                 elif hint:
-                    log.info("ROUTE → HINT qid=%d hint=%s", qid, hint)
+                    log.info("ROUTE → HINT qid=%d hint='%s' (%.0fms) — soft banner",
+                             qid, hint, elapsed * 1000)
                     routing_result["hint"] = hint
                 else:
-                    log.info("ROUTE → MINE qid=%d", qid)
+                    log.info("ROUTE → MINE qid=%d (%.0fms) — no redirect/hint",
+                             qid, elapsed * 1000)
             except Exception:
-                log.warning("Routing failed", exc_info=True)
+                log.warning("Routing failed qid=%d (%.0fms)",
+                            qid, (time.time() - route_start) * 1000, exc_info=True)
             finally:
                 routing_result["done"] = True
+                routing_event.set()
+                log.debug("ROUTE DONE qid=%d — event signalled, result=%s", qid,
+                          {k: v for k, v in routing_result.items() if k != 'done'})
 
-        threading.Thread(target=_route_async, daemon=True).start()
+        threading.Thread(target=_route_async, daemon=True, name=f"route-q{qid}").start()
 
         # Fire off streaming immediately (don't wait for routing)
         if self._on_response:
             t = threading.Thread(
                 target=self._stream_response,
-                args=(detected, context, qid, routing_result, kb_results),
+                args=(detected, context, qid, routing_result, routing_event, kb_results),
                 daemon=True,
+                name=f"stream-q{qid}",
             )
             t.start()
 
@@ -196,18 +208,35 @@ class Pipeline:
         context: str,
         qid: int,
         routing_result: dict,
+        routing_event: threading.Event,
         kb_results: list,
     ) -> None:
         """Run the dual-stream LLM response on its own thread."""
         stream_start = time.time()
         log.info("STREAM START qid=%d", qid)
 
-        # Placeholder: streaming started (hint may arrive later from routing)
+        # Brief wait for routing — avoids the UI creating a block with no hint
+        # if routing finishes within a reasonable window.
+        if not routing_event.wait(timeout=0.35):
+            log.debug("STREAM qid=%d: routing not ready after 350ms, proceeding without hint",
+                      qid)
+        else:
+            log.debug("STREAM qid=%d: routing ready before first emit (%.0fms)",
+                      qid, (time.time() - stream_start) * 1000)
+
+        # Check if routing produced a hard redirect
+        cur_redirect = routing_result.get("redirect")
+        cur_hint = routing_result.get("hint")
+        log.debug("STREAM FIRST EMIT qid=%d: redirect=%s hint=%s",
+                  qid, cur_redirect, cur_hint)
+
+        # Placeholder: streaming started
         self._on_response(SuggestedResponse(
             question=detected.question_text,
             question_id=qid,
             is_streaming=True,
-            hint_to=routing_result.get("hint"),
+            redirect_to=cur_redirect,
+            hint_to=cur_hint,
         ))
 
         with self._lock:
@@ -245,13 +274,25 @@ class Pipeline:
                 else:
                     full_answer.append(chunk)
 
+            # Check for newly-arrived routing result each iteration
+            new_redirect = routing_result.get("redirect")
+            new_hint = routing_result.get("hint")
+            if new_redirect != cur_redirect or new_hint != cur_hint:
+                log.info("STREAM qid=%d: routing result CHANGED mid-stream "
+                         "(redirect: %s→%s, hint: %s→%s) at %.0fms",
+                         qid, cur_redirect, new_redirect, cur_hint, new_hint,
+                         (time.time() - stream_start) * 1000)
+                cur_redirect = new_redirect
+                cur_hint = new_hint
+
             self._on_response(SuggestedResponse(
                 question=detected.question_text,
                 bullets="".join(full_bullets),
                 answer="".join(full_answer),
                 question_id=qid,
                 is_streaming=True,
-                hint_to=routing_result.get("hint"),
+                redirect_to=cur_redirect,
+                hint_to=cur_hint,
             ))
             if not (bullets_done and answer_done):
                 time.sleep(0.05)
@@ -259,13 +300,18 @@ class Pipeline:
         # Final emission
         bullets_text = "".join(full_bullets)
         answer_text = "".join(full_answer)
+        final_redirect = routing_result.get("redirect")
+        final_hint = routing_result.get("hint")
+        log.debug("STREAM FINAL EMIT qid=%d: redirect=%s hint=%s",
+                  qid, final_redirect, final_hint)
         self._on_response(SuggestedResponse(
             question=detected.question_text,
             bullets=bullets_text,
             answer=answer_text,
             question_id=qid,
             is_streaming=False,
-            hint_to=routing_result.get("hint"),
+            redirect_to=final_redirect,
+            hint_to=final_hint,
         ))
 
         # Store for conversation continuity (answer only — bullets are ephemeral)
@@ -273,8 +319,10 @@ class Pipeline:
             self._qa_history.append((detected.question_text, answer_text))
 
         duration = time.time() - stream_start
-        log.info("STREAM END qid=%d  %.1fs  bullets=%d chars  answer=%d chars",
-                 qid, duration, len(bullets_text), len(answer_text))
+        log.info("STREAM END qid=%d  %.1fs  bullets=%d chars  answer=%d chars  "
+                 "final_redirect=%s  final_hint=%s",
+                 qid, duration, len(bullets_text), len(answer_text),
+                 final_redirect, final_hint)
 
     # ── team summary builder ──────────────────────────────────────────
 

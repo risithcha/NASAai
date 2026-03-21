@@ -210,23 +210,34 @@ class OverlayWindow(QWidget):
 
     @pyqtSlot(object)
     def _on_response(self, resp: SuggestedResponse) -> None:
+        log.debug("UI _on_response: qid=%d is_streaming=%s redirect_to=%s hint_to=%s "
+                  "current_qid=%d bullets=%d answer=%d",
+                  resp.question_id, resp.is_streaming, resp.redirect_to, resp.hint_to,
+                  self._current_question_id, len(resp.bullets), len(resp.answer))
+
         # Redirect: question belongs to another user
         if resp.redirect_to:
+            log.info("UI REDIRECT: qid=%d → '%s' (showing redirect card)",
+                     resp.question_id, resp.redirect_to)
             self._current_question_id = resp.question_id
             self.alert_card.show_redirect(resp.question, resp.redirect_to)
             return
         # New question — append a new block
         if resp.question_id != self._current_question_id:
+            log.info("UI NEW QUESTION: qid=%d hint_to='%s' (creating QA block)",
+                     resp.question_id, resp.hint_to or "")
             self._current_question_id = resp.question_id
             self.alert_card.show_question(resp.question, hint_to=resp.hint_to or "")
             self.transcript_panel.collapse()
         # Inject async routing hint if it arrived after block creation
         if resp.hint_to:
+            log.debug("UI HINT UPDATE: qid=%d hint_to='%s'", resp.question_id, resp.hint_to)
             self.alert_card.update_hint(resp.hint_to)
         # Streaming update for the current question
         if resp.is_streaming:
             self.alert_card.update_response(resp.bullets, resp.answer, streaming=True)
         else:
+            log.debug("UI FINISH: qid=%d", resp.question_id)
             self.alert_card.finish_response(resp.bullets, resp.answer)
 
     @pyqtSlot(str, bool)

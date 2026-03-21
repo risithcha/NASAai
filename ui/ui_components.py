@@ -8,11 +8,14 @@ Reusable PyQt6 widgets for the overlay window.
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import List
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QTextCharFormat, QTextCursor
+
+log = logging.getLogger(__name__)
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -186,6 +189,9 @@ class _QABlock(QFrame):
         self._is_redirect = is_redirect
         self._hint_label: QLabel | None = None
         self._hint_to = hint_to
+        self._created_at = time.time()
+        log.debug("QABlock CREATED: question='%s' redirect=%s redirect_to='%s' hint_to='%s'",
+                  question[:60], is_redirect, redirect_to, hint_to)
         self._build_ui(question, is_redirect, redirect_to, hint_to)
 
     def _build_ui(self, question: str, is_redirect: bool,
@@ -281,7 +287,12 @@ class _QABlock(QFrame):
     def update_hint(self, hint_to: str) -> None:
         """Update the hint banner after block creation (e.g. async routing)."""
         if self._is_redirect or not hint_to or hint_to == self._hint_to:
+            log.debug("QABlock update_hint SKIP: is_redirect=%s hint_to='%s' same=%s",
+                      self._is_redirect, hint_to, hint_to == self._hint_to)
             return
+        age_ms = (time.time() - self._created_at) * 1000
+        log.info("QABlock update_hint: '%s' → '%s' (%.0fms after block created)",
+                 self._hint_to, hint_to, age_ms)
         self._hint_to = hint_to
         if self._hint_label is not None:
             self._hint_label.setText(
@@ -460,6 +471,8 @@ class AlertCard(QFrame):
 
     def show_question(self, question: str, hint_to: str = "") -> None:
         """Append a new Q&A block for an incoming question."""
+        log.info("AlertCard show_question: '%s' hint_to='%s' (block count: %d)",
+                 question[:60], hint_to, len(self._blocks))
         self._header_label.setText("Question Detected")
         self._header_label.setStyleSheet(
             f"color: {ACCENT_YELLOW}; font-size: 12px; font-weight: bold;"
@@ -478,7 +491,10 @@ class AlertCard(QFrame):
     def update_hint(self, hint_to: str) -> None:
         """Update the hint banner on the active block (async routing)."""
         if self._active_block:
+            log.debug("AlertCard update_hint: forwarding '%s' to active block", hint_to)
             self._active_block.update_hint(hint_to)
+        else:
+            log.warning("AlertCard update_hint: NO active block to update (hint='%s')", hint_to)
 
     def update_response(self, bullets: str, answer: str,
                         streaming: bool = True) -> None:
@@ -497,6 +513,7 @@ class AlertCard(QFrame):
 
     def show_redirect(self, question: str, redirect_to: str) -> None:
         """Append a redirect notification block."""
+        log.info("AlertCard show_redirect: '%s' → '%s'", question[:60], redirect_to)
         block = _QABlock(question, is_redirect=True, redirect_to=redirect_to)
         self._history_layout.insertWidget(self._history_layout.count() - 1, block)
         self._blocks.append(block)
