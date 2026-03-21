@@ -1,44 +1,216 @@
-21:39:50  INFO     main  Debug log → C:\Users\Risith\Desktop\NASAai\nasaai_debug.log
-21:39:50  INFO     settings.settings_manager  Settings loaded from C:\Users\Risith\Desktop\NASAai\data\settings.json (43 keys)
-21:39:52  INFO     faiss.loader  Loading faiss with AVX2 support.
-21:39:53  INFO     faiss.loader  Successfully loaded faiss with AVX2 support.
-21:39:53  INFO     accounts.user_profile  Loaded profile: risith (Technical Lead) — 4 sections, 45 keywords, 15 excludes
-21:39:53  INFO     accounts.user_profile  Loaded profile: santhosh (Mission Lead) — 5 sections, 39 keywords, 14 excludes
-21:39:53  INFO     accounts.user_profile  Loaded profile: ritvik (Operations & Business Lead) — 10 sections, 36 keywords, 16 excludes
-21:39:56  INFO     accounts.user_profile  Active user set to: Risith Kankanamge (Technical Lead)
-21:39:56  INFO     main  Signed in as Risith Kankanamge (Technical Lead)
-21:39:56  INFO     main  Preparing knowledge base …
-21:39:56  INFO     knowledge.knowledge_base  Knowledge base loaded: 128 chunks
-21:39:56  INFO     main  Knowledge base ready  (128 chunks indexed)
-21:39:57  INFO     ui.overlay_window  Display affinity set to 0x11 (stealth=True)
-21:39:57  INFO     main  Overlay window visible — listening …
-21:39:57  INFO     main  Deepgram connected
-21:39:57  INFO     audio.audio_capture  AudioCapture started  (loopback=Speakers (Realtek(R) Audio) [Loopback], mic=Microphone (HD Webcam eMeet C96)
-21:39:57  INFO     main  Audio capture started
-21:39:57  INFO     intelligence.pipeline  Intelligence pipeline started
-21:39:57  INFO     main  Intelligence pipeline running
-21:39:57  INFO     transcription.transcription_service  Connected to Deepgram streaming endpoint
-21:41:06  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Yes.
-21:41:07  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | About NASA. Right?
-21:41:10  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Are you ready?
-21:41:30  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | During the detailed design phase, we calculated the center of gravity to be 35.49 centimeter from th
-21:41:30  INFO     intelligence.question_detector  DETECT REGEX HIT (48 words, 0ms): During the detailed design phase, we calculated the center of gravity to be 35.49 centimeter from th
-21:41:30  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): During the detailed design phase, we calculated the center of gravity to be 35.49 centimeter from the datum. Why is it s
-21:41:31  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
-21:41:31  INFO     intelligence.pipeline  STREAM START qid=1
-21:41:32  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:41:32  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=risith  conf=1.00  (838ms) | During the detailed design phase, we calculated the center of gravity to be 35.4
-21:41:32  INFO     intelligence.pipeline  ROUTE → MINE qid=1
-21:41:33  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:41:33  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:41:37  INFO     intelligence.pipeline  STREAM END qid=1  5.3s  bullets=1216 chars  answer=921 chars
-21:41:47  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Yeah.
-21:41:54  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Mhmm.
-21:41:58  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay.
-21:42:16  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay.
-21:42:23  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay.
-21:42:28  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Got it.
-21:42:29  INFO     main  Shutting down …
-21:42:29  INFO     audio.audio_capture  AudioCapture stopped
-21:42:29  INFO     transcription.transcription_service  Deepgram listener exited
-21:42:29  INFO     main  Goodbye.
+01:01:11  INFO     main  Debug log → C:\Users\santh\OneDrive\Desktop\NASAai\nasaai_debug.log
+01:01:11  INFO     settings.settings_manager  Settings loaded from C:\Users\santh\OneDrive\Desktop\NASAai\data\settings.json (43 keys)
+01:01:11  WARNING  main  PDF not found at C:\Users\Risith\Desktop\NASAai\data\nasa_report.pdf — knowledge base will be empty.  Place your NASA PDF there and re-run.
+01:01:18  INFO     faiss.loader  Loading faiss with AVX2 support.
+01:01:18  INFO     faiss.loader  Successfully loaded faiss with AVX2 support.
+01:01:18  INFO     accounts.user_profile  Loaded profile: risith (Technical Lead) — 4 sections, 45 keywords, 15 excludes
+01:01:18  INFO     accounts.user_profile  Loaded profile: santhosh (Mission Lead) — 5 sections, 39 keywords, 14 excludes
+01:01:18  INFO     accounts.user_profile  Loaded profile: ritvik (Operations & Business Lead) — 10 sections, 36 keywords, 16 excludes
+01:01:27  INFO     accounts.user_profile  Active user set to: Santhosh Ilaiyaraja (Mission Lead)
+01:01:27  INFO     main  Signed in as Santhosh Ilaiyaraja (Mission Lead)
+01:01:27  INFO     main  Preparing knowledge base …
+01:01:27  INFO     knowledge.knowledge_base  Knowledge base loaded: 128 chunks
+01:01:27  INFO     main  Knowledge base ready  (128 chunks indexed)
+01:01:27  INFO     ui.overlay_window  Display affinity set to 0x11 (stealth=True)
+01:01:27  INFO     main  Overlay window visible — listening …
+01:01:27  INFO     main  Deepgram connected
+01:01:27  INFO     audio.audio_capture  AudioCapture started  (loopback=Headphones (Realtek(R) Audio) [Loopback], mic=Microphone (Realtek(R) Audio))
+01:01:27  INFO     main  Audio capture started
+01:01:27  INFO     intelligence.pipeline  Intelligence pipeline started
+01:01:27  INFO     main  Intelligence pipeline running
+01:01:27  INFO     transcription.transcription_service  Connected to Deepgram streaming endpoint
+01:01:29  INFO     ui.overlay_window  Display affinity set to 0x0 (stealth=False)
+01:01:37  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | So
+01:01:58  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | You brought on your mentor, Charita Kangkang gave. Early in the process as the operations lead how d
+01:01:58  INFO     intelligence.question_detector  DETECT REGEX HIT (39 words, 0ms): You brought on your mentor, Charita Kangkang gave. Early in the process as the operations lead how d
+01:01:58  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): You brought on your mentor, Charita Kangkang gave. Early in the process as the operations lead how did you balance the t
+01:01:59  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+01:01:59  INFO     intelligence.pipeline  STREAM START qid=1
+01:01:59  INFO     ui.overlay_window  UI NEW QUESTION: qid=1 hint_to='' (creating QA block)
+01:01:59  INFO     ui.ui_components  AlertCard show_question: 'You brought on your mentor, Charita Kangkang gave. Early in ' hint_to='' (block count: 0)
+01:02:00  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:02:00  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:02:00  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+01:02:00  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=ritvik  conf=1.00  (1225ms) | You brought on your mentor, Charita Kangkang gave. Early in the process as the o
+01:02:00  INFO     intelligence.pipeline  LLM ROUTE → REDIRECT to Ritvik (Operations & Business Lead) (conf=1.00)
+01:02:00  INFO     intelligence.pipeline  ROUTE → REDIRECT qid=1 to 'Ritvik (Operations & Business Lead)' (1227ms) — will show redirect card
+01:02:00  INFO     intelligence.pipeline  STREAM qid=1: routing result CHANGED mid-stream (redirect: None→Ritvik (Operations & Business Lead), hint: None→None) at 1269ms
+01:02:00  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:00  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:00  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:00  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:00  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:00  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:01  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:01  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:02  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:02  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:03  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:03  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:04  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:04  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:05  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:05  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:05  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:05  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:05  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:05  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:05  INFO     intelligence.pipeline  STREAM END qid=1  5.6s  bullets=1235 chars  answer=823 chars  final_redirect=Ritvik (Operations & Business Lead)  final_hint=None
+01:02:05  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:05  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:05  INFO     ui.overlay_window  UI REDIRECT: qid=1 → 'Ritvik (Operations & Business Lead)' (showing redirect card)
+01:02:05  INFO     ui.ui_components  AlertCard show_redirect: 'You brought on your mentor, Charita Kangkang gave. Early in ' → 'Ritvik (Operations & Business Lead)'
+01:02:08  INFO     main  Shutting down …
+01:02:09  INFO     audio.audio_capture  AudioCapture stopped
+01:02:09  INFO     transcription.transcription_service  Deepgram listener exited
+01:02:09  INFO     main  Goodbye.
