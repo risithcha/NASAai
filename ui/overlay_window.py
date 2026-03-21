@@ -148,6 +148,26 @@ class OverlayWindow(QWidget):
         self._stealth_btn.clicked.connect(self._toggle_stealth)
         layout.addWidget(self._stealth_btn)
 
+        # Settings gear button
+        gear_btn = QPushButton("⚙")
+        gear_btn.setFixedSize(24, 24)
+        gear_btn.setToolTip("Settings")
+        gear_btn.setStyleSheet(
+            f"""
+            QPushButton {{
+                background: transparent;
+                color: {TEXT_SECONDARY};
+                border: none;
+                font-size: 14px;
+            }}
+            QPushButton:hover {{
+                color: {ACCENT_GREEN};
+            }}
+            """
+        )
+        gear_btn.clicked.connect(self._open_settings)
+        layout.addWidget(gear_btn)
+
         close_btn = QPushButton("✕")
         close_btn.setFixedSize(24, 24)
         close_btn.setStyleSheet(
@@ -321,3 +341,12 @@ class OverlayWindow(QWidget):
                 """
             )
             self.status_bar.stealth_indicator.set_active(False)
+
+    def _open_settings(self) -> None:
+        """Open the settings dialog as a modal."""
+        from ui.settings_dialog import SettingsDialog
+
+        dlg = SettingsDialog(self)
+        dlg.exec()
+        if dlg.restart_needed:
+            log.info("Settings changed — restart required for some changes.")

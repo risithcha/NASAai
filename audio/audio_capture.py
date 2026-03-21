@@ -95,30 +95,54 @@ class AudioCapture:
     # ── device resolution ─────────────────────────────────────────────
 
     def _resolve_devices(self) -> None:
-        # --- loopback ---
-        try:
-            wasapi_info = self._pa.get_host_api_info_by_type(pyaudio.paWASAPI)
-        except OSError:
-            raise RuntimeError("WASAPI is not available on this system.")
+        from settings.settings_manager import settings as sm
 
-        default_output = self._pa.get_device_info_by_index(
-            wasapi_info["defaultOutputDevice"]
-        )
-        if not default_output.get("isLoopbackDevice"):
-            for lb in self._pa.get_loopback_device_info_generator():
-                if default_output["name"] in lb["name"]:
-                    default_output = lb
-                    break
-            else:
-                raise RuntimeError(
-                    "No loopback device found for the default output.  "
-                    "Run `python -m pyaudiowpatch` to inspect devices."
-                )
-        self._loopback_dev = default_output
+        # Check if user selected specific devices in settings
+        cfg_lb = sm.get("audio.loopback_device")  # device index str or ""
+        cfg_mic = sm.get("audio.mic_device")       # device index str or ""
+
+        # --- loopback ---
+        if cfg_lb:
+            try:
+                self._loopback_dev = self._pa.get_device_info_by_index(int(cfg_lb))
+                log.info("Using settings-selected loopback device: %s", self._loopback_dev["name"])
+            except Exception:
+                log.warning("Configured loopback device %s not found, falling back to auto-detect", cfg_lb)
+                cfg_lb = ""
+
+        if not cfg_lb:
+            try:
+                wasapi_info = self._pa.get_host_api_info_by_type(pyaudio.paWASAPI)
+            except OSError:
+                raise RuntimeError("WASAPI is not available on this system.")
+
+            default_output = self._pa.get_device_info_by_index(
+                wasapi_info["defaultOutputDevice"]
+            )
+            if not default_output.get("isLoopbackDevice"):
+                for lb in self._pa.get_loopback_device_info_generator():
+                    if default_output["name"] in lb["name"]:
+                        default_output = lb
+                        break
+                else:
+                    raise RuntimeError(
+                        "No loopback device found for the default output.  "
+                        "Run `python -m pyaudiowpatch` to inspect devices."
+                    )
+            self._loopback_dev = default_output
 
         # --- mic ---
-        default_input_idx = self._pa.get_default_input_device_info()["index"]
-        self._mic_dev = self._pa.get_device_info_by_index(default_input_idx)
+        if cfg_mic:
+            try:
+                self._mic_dev = self._pa.get_device_info_by_index(int(cfg_mic))
+                log.info("Using settings-selected mic device: %s", self._mic_dev["name"])
+            except Exception:
+                log.warning("Configured mic device %s not found, falling back to auto-detect", cfg_mic)
+                cfg_mic = ""
+
+        if not cfg_mic:
+            default_input_idx = self._pa.get_default_input_device_info()["index"]
+            self._mic_dev = self._pa.get_device_info_by_index(default_input_idx)
 
     # ── stream helpers ────────────────────────────────────────────────
 

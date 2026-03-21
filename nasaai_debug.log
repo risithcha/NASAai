@@ -1,79 +1,44 @@
-02:50:28  INFO     main  Debug log → C:\Users\Risith\Desktop\NASAai\nasaai_debug.log
-02:50:30  INFO     faiss.loader  Loading faiss with AVX2 support.
-02:50:30  INFO     faiss.loader  Successfully loaded faiss with AVX2 support.
-02:50:30  INFO     accounts.user_profile  Loaded profile: risith (Technical Lead) — 4 sections, 45 keywords, 15 excludes
-02:50:30  INFO     accounts.user_profile  Loaded profile: santhosh (Mission Lead) — 5 sections, 39 keywords, 14 excludes
-02:50:30  INFO     accounts.user_profile  Loaded profile: ritvik (Operations & Business Lead) — 10 sections, 36 keywords, 16 excludes
-02:50:50  INFO     accounts.user_profile  Active user set to: Risith Kankanamge (Technical Lead)
-02:50:50  INFO     main  Signed in as Risith Kankanamge (Technical Lead)
-02:50:50  INFO     main  Preparing knowledge base …
-02:50:50  INFO     knowledge.knowledge_base  Knowledge base loaded: 128 chunks
-02:50:50  INFO     main  Knowledge base ready  (128 chunks indexed)
-02:50:50  INFO     ui.overlay_window  Display affinity set to 0x11 (stealth=True)
-02:50:50  INFO     main  Overlay window visible — listening …
-02:50:51  INFO     main  Deepgram connected
-02:50:51  INFO     audio.audio_capture  AudioCapture started  (loopback=Realtek HD Audio 2nd output (Realtek(R) Audio) [Loopback], mic=Microphone (HD Webcam eMeet C96)
-02:50:51  INFO     main  Audio capture started
-02:50:51  INFO     intelligence.pipeline  Intelligence pipeline started
-02:50:51  INFO     main  Intelligence pipeline running
-02:50:51  INFO     transcription.transcription_service  Connected to Deepgram streaming endpoint
-02:50:52  INFO     ui.overlay_window  Display affinity set to 0x0 (stealth=False)
-02:51:14  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | You guys designed the detect and avoid system to run autonomous on the PixHawk four minute minimize 
-02:51:14  INFO     intelligence.question_detector  DETECT REGEX HIT (45 words, 0ms): You guys designed the detect and avoid system to run autonomous on the PixHawk four minute minimize 
-02:51:14  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): You guys designed the detect and avoid system to run autonomous on the PixHawk four minute minimize latency. Can you wal
-02:51:14  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
-02:51:14  INFO     intelligence.pipeline  STREAM START qid=1
-02:51:15  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:51:15  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:51:15  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:51:15  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=risith  conf=1.00  (930ms) | You guys designed the detect and avoid system to run autonomous on the PixHawk f
-02:51:15  INFO     intelligence.pipeline  ROUTE → MINE qid=1
-02:51:19  INFO     intelligence.pipeline  STREAM END qid=1  4.4s  bullets=1233 chars  answer=889 chars
-02:51:57  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Looking at the payload parameters, looks like we're aligned on a ten eighty p RGB camera to capture 
-02:51:57  INFO     intelligence.question_detector  DETECT REGEX HIT (69 words, 0ms): Looking at the payload parameters, looks like we're aligned on a ten eighty p RGB camera to capture 
-02:51:57  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): Looking at the payload parameters, looks like we're aligned on a ten eighty p RGB camera to capture pictures of the cano
-02:51:57  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
-02:51:57  INFO     intelligence.pipeline  STREAM START qid=2
-02:51:58  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:51:58  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:51:58  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:51:58  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=santhosh  conf=1.00  (677ms) | Looking at the payload parameters, looks like we're aligned on a ten eighty p RG
-02:51:58  INFO     intelligence.pipeline  LLM ROUTE → REDIRECT to Santhosh (Mission Lead) (conf=1.00)
-02:51:58  INFO     intelligence.pipeline  ROUTE → REDIRECT qid=2 to Santhosh (Mission Lead) (still answering)
-02:51:59  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Scroll down.
-02:52:01  INFO     intelligence.pipeline  STREAM END qid=2  4.0s  bullets=1247 chars  answer=889 chars
-02:52:28  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | K. Following up on your answer, is it one the evasive maneuvers executed, the aircraft successfully 
-02:52:29  INFO     intelligence.question_detector  DETECT REGEX HIT (43 words, 0ms): K. Following up on your answer, is it one the evasive maneuvers executed, the aircraft successfully 
-02:52:29  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): K. Following up on your answer, is it one the evasive maneuvers executed, the aircraft successfully clears the obstacle,
-02:52:29  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
-02:52:29  INFO     intelligence.pipeline  STREAM START qid=3
-02:52:29  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:52:29  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:52:29  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:52:29  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=santhosh  conf=1.00  (708ms) | K. Following up on your answer, is it one the evasive maneuvers executed, the ai
-02:52:29  INFO     intelligence.pipeline  LLM ROUTE → REDIRECT to Santhosh (Mission Lead) (conf=1.00)
-02:52:29  INFO     intelligence.pipeline  ROUTE → REDIRECT qid=3 to Santhosh (Mission Lead) (still answering)
-02:52:33  INFO     intelligence.pipeline  STREAM END qid=3  4.4s  bullets=1408 chars  answer=822 chars
-02:52:35  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Wait. Wait.
-02:52:37  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Is he giving you a good answer?
-02:52:38  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:52:43  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Nika, is he giving you good answer?
-02:52:44  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:52:45  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Oh, very
-02:52:54  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay. Can you go up to Santosh? She's gonna what does it say?
-02:52:54  INFO     intelligence.question_detector  DETECT REGEX HIT (13 words, 0ms): Okay. Can you go up to Santosh? She's gonna what does it say?
-02:52:54  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): Okay. Can you go up to Santosh? She's gonna what does it say?
-02:52:54  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
-02:52:54  INFO     intelligence.pipeline  STREAM START qid=4
-02:52:55  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:52:55  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:52:55  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:52:55  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=generic  conf=0.50  (581ms) | Okay. Can you go up to Santosh? She's gonna what does it say?
-02:52:55  INFO     intelligence.pipeline  ROUTE → MINE qid=4
-02:52:58  INFO     intelligence.pipeline  STREAM END qid=4  3.8s  bullets=1211 chars  answer=155 chars
-02:53:04  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Does it say that it's mid percentage?
-02:53:05  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-02:53:14  INFO     main  Shutting down …
-02:53:14  INFO     audio.audio_capture  AudioCapture stopped
-02:53:14  INFO     transcription.transcription_service  Deepgram listener exited
-02:53:14  INFO     main  Goodbye.
+21:39:50  INFO     main  Debug log → C:\Users\Risith\Desktop\NASAai\nasaai_debug.log
+21:39:50  INFO     settings.settings_manager  Settings loaded from C:\Users\Risith\Desktop\NASAai\data\settings.json (43 keys)
+21:39:52  INFO     faiss.loader  Loading faiss with AVX2 support.
+21:39:53  INFO     faiss.loader  Successfully loaded faiss with AVX2 support.
+21:39:53  INFO     accounts.user_profile  Loaded profile: risith (Technical Lead) — 4 sections, 45 keywords, 15 excludes
+21:39:53  INFO     accounts.user_profile  Loaded profile: santhosh (Mission Lead) — 5 sections, 39 keywords, 14 excludes
+21:39:53  INFO     accounts.user_profile  Loaded profile: ritvik (Operations & Business Lead) — 10 sections, 36 keywords, 16 excludes
+21:39:56  INFO     accounts.user_profile  Active user set to: Risith Kankanamge (Technical Lead)
+21:39:56  INFO     main  Signed in as Risith Kankanamge (Technical Lead)
+21:39:56  INFO     main  Preparing knowledge base …
+21:39:56  INFO     knowledge.knowledge_base  Knowledge base loaded: 128 chunks
+21:39:56  INFO     main  Knowledge base ready  (128 chunks indexed)
+21:39:57  INFO     ui.overlay_window  Display affinity set to 0x11 (stealth=True)
+21:39:57  INFO     main  Overlay window visible — listening …
+21:39:57  INFO     main  Deepgram connected
+21:39:57  INFO     audio.audio_capture  AudioCapture started  (loopback=Speakers (Realtek(R) Audio) [Loopback], mic=Microphone (HD Webcam eMeet C96)
+21:39:57  INFO     main  Audio capture started
+21:39:57  INFO     intelligence.pipeline  Intelligence pipeline started
+21:39:57  INFO     main  Intelligence pipeline running
+21:39:57  INFO     transcription.transcription_service  Connected to Deepgram streaming endpoint
+21:41:06  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Yes.
+21:41:07  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | About NASA. Right?
+21:41:10  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Are you ready?
+21:41:30  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | During the detailed design phase, we calculated the center of gravity to be 35.49 centimeter from th
+21:41:30  INFO     intelligence.question_detector  DETECT REGEX HIT (48 words, 0ms): During the detailed design phase, we calculated the center of gravity to be 35.49 centimeter from th
+21:41:30  INFO     intelligence.pipeline  QUESTION DETECTED (conf=0.85): During the detailed design phase, we calculated the center of gravity to be 35.49 centimeter from the datum. Why is it s
+21:41:31  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+21:41:31  INFO     intelligence.pipeline  STREAM START qid=1
+21:41:32  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+21:41:32  INFO     intelligence.pipeline  LLM ROUTE: assigned_to=risith  conf=1.00  (838ms) | During the detailed design phase, we calculated the center of gravity to be 35.4
+21:41:32  INFO     intelligence.pipeline  ROUTE → MINE qid=1
+21:41:33  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+21:41:33  INFO     httpx  HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+21:41:37  INFO     intelligence.pipeline  STREAM END qid=1  5.3s  bullets=1216 chars  answer=921 chars
+21:41:47  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Yeah.
+21:41:54  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Mhmm.
+21:41:58  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay.
+21:42:16  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay.
+21:42:23  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Okay.
+21:42:28  INFO     intelligence.pipeline  SEG QUEUED: ch=0 spk=Speaker 0 utt_end=True | Got it.
+21:42:29  INFO     main  Shutting down …
+21:42:29  INFO     audio.audio_capture  AudioCapture stopped
+21:42:29  INFO     transcription.transcription_service  Deepgram listener exited
+21:42:29  INFO     main  Goodbye.

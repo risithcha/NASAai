@@ -62,3 +62,57 @@ LOG_FILE = BASE_DIR / "nasaai_debug.log"
 OVERLAY_WIDTH = 480
 OVERLAY_HEIGHT = 700
 OVERLAY_OPACITY = 0.92
+
+
+# ── Settings → Config bridge ─────────────────────────────────────────
+def load_from_settings() -> None:
+    """Override module-level constants from the persisted settings.json."""
+    from settings.settings_manager import settings as sm
+
+    g = globals()
+
+    _MAP = {
+        "general.deepgram_api_key":       "DEEPGRAM_API_KEY",
+        "general.openai_api_key":         "OPENAI_API_KEY",
+        "general.pdf_path":              None,  # handled separately
+        "general.log_level":             None,
+        "general.debug_log_file":        None,
+        "general.debounce_sec":          "QUESTION_DEBOUNCE_SEC",
+        "general.qa_history_depth":      "QA_HISTORY_DEPTH",
+        "audio.sample_rate":             "AUDIO_SAMPLE_RATE",
+        "audio.chunk_ms":                "AUDIO_CHUNK_MS",
+        "transcription.model":           "DG_MODEL",
+        "transcription.language":        "DG_LANGUAGE",
+        "transcription.diarize":         "DG_DIARIZE",
+        "transcription.smart_format":    "DG_SMART_FORMAT",
+        "transcription.endpointing_ms":  "DG_ENDPOINTING_MS",
+        "transcription.utterance_end_ms":"DG_UTTERANCE_END_MS",
+        "intelligence.response_model":   "RESPONSE_MODEL",
+        "intelligence.response_max_tokens":"RESPONSE_MAX_TOKENS",
+        "intelligence.detection_model":  "QUESTION_DETECT_MODEL",
+        "intelligence.routing_model":    "ROUTING_MODEL",
+        "intelligence.bullets_model":    "BULLETS_MODEL",
+        "intelligence.bullets_max_tokens":"BULLETS_MAX_TOKENS",
+        "intelligence.min_words":        None,
+        "intelligence.regex_min_words":  None,
+        "intelligence.similarity_top_k": "SIMILARITY_TOP_K",
+        "intelligence.similarity_threshold":"SIMILARITY_THRESHOLD",
+        "appearance.width":              "OVERLAY_WIDTH",
+        "appearance.height":             "OVERLAY_HEIGHT",
+        "appearance.opacity":            "OVERLAY_OPACITY",
+    }
+
+    for skey, const_name in _MAP.items():
+        if const_name is None:
+            continue
+        val = sm.get(skey)
+        if val is not None and val != "":
+            g[const_name] = val
+
+    # PDF path override
+    pdf = sm.get("general.pdf_path")
+    if pdf:
+        g["PDF_PATH"] = Path(pdf)
+
+    # Recompute derived audio constant
+    g["AUDIO_CHUNK_SAMPLES"] = int(g["AUDIO_SAMPLE_RATE"] * g["AUDIO_CHUNK_MS"] / 1000)

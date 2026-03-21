@@ -63,6 +63,10 @@ def _preflight() -> None:
 
 
 def main() -> None:
+    # Load persisted settings into config constants before anything else
+    import config
+    config.load_from_settings()
+
     _preflight()
 
     # Import heavy modules after preflight so errors surface quickly
