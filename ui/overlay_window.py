@@ -215,8 +215,12 @@ class OverlayWindow(QWidget):
                   resp.question_id, resp.is_streaming, resp.redirect_to, resp.hint_to,
                   self._current_question_id, len(resp.bullets), len(resp.answer))
 
-        # Redirect: question belongs to another user
+        # Redirect: question belongs to another user — show ONCE per question
         if resp.redirect_to:
+            if self._current_question_id == resp.question_id:
+                log.debug("UI REDIRECT DEDUP: qid=%d already shown, skipping",
+                          resp.question_id)
+                return
             log.info("UI REDIRECT: qid=%d → '%s' (showing redirect card)",
                      resp.question_id, resp.redirect_to)
             self._current_question_id = resp.question_id

@@ -230,6 +230,19 @@ class Pipeline:
         log.debug("STREAM FIRST EMIT qid=%d: redirect=%s hint=%s",
                   qid, cur_redirect, cur_hint)
 
+        # Hard redirect: emit ONE redirect response and stop — no point
+        # generating an LLM answer for someone else's question.
+        if cur_redirect:
+            log.info("STREAM BAIL qid=%d: hard redirect to '%s' — skipping LLM generation",
+                     qid, cur_redirect)
+            self._on_response(SuggestedResponse(
+                question=detected.question_text,
+                question_id=qid,
+                is_streaming=False,
+                redirect_to=cur_redirect,
+            ))
+            return
+
         # Placeholder: streaming started
         self._on_response(SuggestedResponse(
             question=detected.question_text,
@@ -277,12 +290,23 @@ class Pipeline:
             # Check for newly-arrived routing result each iteration
             new_redirect = routing_result.get("redirect")
             new_hint = routing_result.get("hint")
-            if new_redirect != cur_redirect or new_hint != cur_hint:
-                log.info("STREAM qid=%d: routing result CHANGED mid-stream "
-                         "(redirect: %s→%s, hint: %s→%s) at %.0fms",
-                         qid, cur_redirect, new_redirect, cur_hint, new_hint,
+
+            # Hard redirect arrived mid-stream: emit once and bail
+            if new_redirect and not cur_redirect:
+                log.info("STREAM qid=%d: hard redirect arrived MID-STREAM to '%s' at %.0fms — bailing",
+                         qid, new_redirect, (time.time() - stream_start) * 1000)
+                self._on_response(SuggestedResponse(
+                    question=detected.question_text,
+                    question_id=qid,
+                    is_streaming=False,
+                    redirect_to=new_redirect,
+                ))
+                return
+
+            if new_hint != cur_hint:
+                log.info("STREAM qid=%d: hint CHANGED mid-stream (%s→%s) at %.0fms",
+                         qid, cur_hint, new_hint,
                          (time.time() - stream_start) * 1000)
-                cur_redirect = new_redirect
                 cur_hint = new_hint
 
             self._on_response(SuggestedResponse(
