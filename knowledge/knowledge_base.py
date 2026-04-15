@@ -114,17 +114,51 @@ class KnowledgeBase:
 
     # ── embeddings ────────────────────────────────────────────────────
 
+    @staticmethod
+    def _build_token_batches(
+        texts: list[str],
+        max_tokens: int = 250_000,
+    ) -> list[list[str]]:
+        """Split *texts* into batches that each stay under *max_tokens*.
+
+        Uses tiktoken to estimate per-text token counts so we never exceed
+        the OpenAI embeddings API limit (300 000 tokens per request; we use
+        250 000 as a safety margin).
+        """
+        import tiktoken
+
+        enc = tiktoken.get_encoding("cl100k_base")
+
+        batches: list[list[str]] = []
+        current_batch: list[str] = []
+        current_tokens = 0
+
+        for text in texts:
+            tok_count = len(enc.encode(text))
+            # If adding this text would exceed the limit, flush current batch
+            if current_batch and current_tokens + tok_count > max_tokens:
+                batches.append(current_batch)
+                current_batch = []
+                current_tokens = 0
+            current_batch.append(text)
+            current_tokens += tok_count
+
+        if current_batch:
+            batches.append(current_batch)
+
+        return batches
+
     def _embed_texts(self, texts: list[str]) -> np.ndarray:
         """Call OpenAI embeddings and return an (N, dim) float32 array."""
         from openai import RateLimitError, APIError
 
         all_vecs: list[list[float]] = []
-        batch_size = 512
         max_retries = 5
 
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
+        batches = self._build_token_batches(texts)
+        log.info("Embedding %d texts in %d batch(es)", len(texts), len(batches))
 
+        for batch in batches:
             for attempt in range(max_retries):
                 try:
                     resp = self._client.embeddings.create(
@@ -153,7 +187,7 @@ class KnowledgeBase:
                         raise SystemExit(1) from exc
 
                     # Transient 429 — exponential backoff
-                    wait = 2 ** attempt
+                    wait = min(2 ** attempt, 60)
                     log.warning(
                         "Rate-limited (attempt %d/%d). Retrying in %ds …",
                         attempt + 1, max_retries, wait,
