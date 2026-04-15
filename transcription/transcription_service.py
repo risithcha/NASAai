@@ -2,7 +2,8 @@
 Real-time transcription via Deepgram's WebSocket streaming API.
 
 Uses a raw websockets connection (not the SDK convenience wrapper) for
-full control over the multichannel, diarized payload.
+full control over the diarized payload.  Audio is single-channel mono
+from a microphone; speaker identification relies on Deepgram diarization.
 """
 
 from __future__ import annotations
@@ -26,8 +27,9 @@ AudioBytesCallback = Callable[[bytes], None]
 
 class TranscriptionService:
     """
-    Connects to Deepgram streaming, accepts interleaved stereo PCM-16
-    frames, and writes speaker-labelled segments into a TranscriptStore.
+    Connects to Deepgram streaming, accepts mono PCM-16 frames from
+    a microphone, and writes speaker-labelled segments (via diarization)
+    into a TranscriptStore.
     """
 
     def __init__(self, store: TranscriptStore) -> None:
@@ -73,8 +75,7 @@ class TranscriptionService:
             f"&language={config.DG_LANGUAGE}"
             f"&smart_format={'true' if config.DG_SMART_FORMAT else 'false'}"
             f"&diarize={'true' if config.DG_DIARIZE else 'false'}"
-            f"&multichannel=true"
-            f"&channels=2"
+            f"&channels=1"
             f"&sample_rate={config.AUDIO_SAMPLE_RATE}"
             f"&encoding=linear16"
             f"&interim_results={'true' if config.DG_INTERIM_RESULTS else 'false'}"
@@ -155,8 +156,7 @@ class TranscriptionService:
     def _handle_results(self, msg: dict) -> None:
         is_final: bool = msg.get("is_final", False)
         speech_final: bool = msg.get("speech_final", False)
-        channel_index: list[int] = msg.get("channel_index", [0, 1])
-        channel_id = channel_index[0] if channel_index else 0
+        channel_id = 0  # single channel (mic only)
 
         channel_data = msg.get("channel", {})
         alternatives = channel_data.get("alternatives", [])
@@ -168,9 +168,9 @@ class TranscriptionService:
         if not transcript:
             return
 
-        # Determine speaker label
+        # Determine speaker label via diarization
         words = alt.get("words", [])
-        speaker = self._extract_speaker(words, channel_id)
+        speaker = self._extract_speaker(words)
 
         if not is_final:
             # Interim segment — show as preview only
@@ -183,7 +183,7 @@ class TranscriptionService:
             self._store.set_interim(seg)
             return
 
-        # is_final=True: append to per-channel utterance buffer
+        # is_final=True: append to utterance buffer
         buf = self._utterance_buf.setdefault(channel_id, [])
         buf.append(transcript)
         self._utterance_speaker[channel_id] = speaker
@@ -214,18 +214,14 @@ class TranscriptionService:
                 cb(utt_seg)
 
     @staticmethod
-    def _extract_speaker(words: list[dict], channel: int) -> str:
+    def _extract_speaker(words: list[dict]) -> str:
         """
-        Channel 1 = mic → "You".
-        Channel 0 = remote → use diarization speaker id.
+        Use diarization speaker IDs to label who is speaking.
+        All audio comes from a single microphone channel.
         """
-        if channel == 1:
-            return "You"
-
-        # Find the most common speaker id across words
         speaker_ids = [w.get("speaker") for w in words if w.get("speaker") is not None]
         if not speaker_ids:
-            return "Remote"
+            return "Speaker"
 
         # majority vote
         from collections import Counter

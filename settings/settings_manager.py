@@ -27,7 +27,6 @@ RESTART_REQUIRED_KEYS: frozenset[str] = frozenset(
         "general.openai_api_key",
         "audio.sample_rate",
         "audio.channels",
-        "audio.loopback_device",
         "audio.mic_device",
         "audio.encoding",
     }
@@ -48,11 +47,7 @@ _DEFAULTS: dict[str, Any] = {
     "audio.channels": 1,
     "audio.chunk_ms": 100,
     "audio.encoding": "linear16",
-    "audio.loopback_device": "",
     "audio.mic_device": "",
-    "audio.aec_enabled": True,
-    "audio.aec_filter_length": 256,
-    "audio.aec_step_size": 0.05,
     # ── Transcription ─────────────────────────────────────────────────
     "transcription.model": "nova-3",
     "transcription.language": "en",

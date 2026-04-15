@@ -1,5 +1,5 @@
 """
-Detect when a remote speaker is asking the user a question.
+Detect when a speaker is asking a question during the presentation.
 
 Two-stage approach:
   1. Fast regex pre-filter for obvious question patterns.
@@ -94,17 +94,18 @@ class QuestionDetector:
         self, segment: str, context: str
     ) -> DetectedQuestion | None:
         system = (
-            "You are a question filter for a NASA UAS (drone) design review meeting. "
-            "An evaluator panel is questioning a student team about their aircraft design, "
-            "mission payload, detect-and-avoid system, operations plan, and budget.\n\n"
-            "Given the recent transcript and the latest segment from an evaluator, "
-            "decide: is this a SUBSTANTIVE TECHNICAL or DESIGN question that the "
+            "You are a question filter for a Data Science project presentation. "
+            "Judges are questioning a student team about their data analysis, "
+            "datasets, statistical methods, machine learning models, and findings.\n\n"
+            "Given the recent transcript and the latest segment from a speaker, "
+            "decide: is this a SUBSTANTIVE question that the "
             "presenting team needs to answer with project-specific knowledge?\n\n"
             "ACCEPT as a question:\n"
-            "- Technical questions about the aircraft, payload, sensors, avionics, DAA, GSD, "
-            "flight parameters, algorithms, control logic, mission planning, operations, budget, cost\n"
-            "- Requests to explain, walk through, or elaborate on a design decision\n"
-            "- Follow-up probing questions about a previous technical answer\n\n"
+            "- Technical questions about data analysis, datasets, statistical methods, "
+            "machine learning, visualizations, findings, methodology\n"
+            "- Requests to explain, walk through, or elaborate on an analysis decision\n"
+            "- Follow-up probing questions about a previous answer\n"
+            "- Questions about the portfolio, data sources, or results\n\n"
             "REJECT (is_question=false):\n"
             "- Casual chatter, greetings, banter, off-topic talk\n"
             "- Rhetorical or phatic questions: 'Right?', 'Okay?', 'You know?', 'Correct?'\n"
@@ -113,8 +114,7 @@ class QuestionDetector:
             "- Commands disguised as questions: 'Can you click that?', 'Would you scroll?'\n"
             "- Personal questions unrelated to the project: 'How are you?', 'What did you eat?'\n"
             "- Fragments or incomplete thoughts under ~6 words\n"
-            "- Statements with a question mark\n"
-            "- Questions directed at the meeting host, not the presenting team\n\n"
+            "- Statements with a question mark\n\n"
             "If it IS a substantive question, extract the COMPLETE question EXACTLY as spoken "
             "— do NOT summarize, shorten, rephrase, or paraphrase.\n"
             "Respond ONLY with JSON: "

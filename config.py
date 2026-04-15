@@ -1,5 +1,5 @@
 """
-Central configuration for the NASA AI Meeting Assistant.
+Central configuration for the Data Science Presentation Assistant.
 Loads API keys from environment / .env and exposes tunable constants.
 """
 
@@ -13,8 +13,10 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 FAISS_INDEX_DIR = DATA_DIR / "faiss_index"
-PDF_PATH = DATA_DIR / "nasa_report.pdf"
-PROFILES_PATH = DATA_DIR / "NASAai_user_profiles.md"
+CONTEXT_DIR = BASE_DIR / "datasciencecontext"
+PDF_PATH = CONTEXT_DIR / "DSAHS-21361-1_Data_Science_Portfolio (1).pdf"
+CSV_DIR = CONTEXT_DIR                       # CSVs live alongside the PDF
+PROFILES_PATH = DATA_DIR / "dsai_user_profiles.md"
 
 # ── API Keys ──────────────────────────────────────────────────────────
 DEEPGRAM_API_KEY: str = os.getenv("DEEPGRAM_API_KEY", "")
@@ -56,7 +58,7 @@ QA_HISTORY_DEPTH = 3                # prior Q&A pairs passed to LLM for continui
 ROUTING_MODEL = "gpt-4o-mini"       # model for semantic question routing
 
 # ── Logging ───────────────────────────────────────────────────────────
-LOG_FILE = BASE_DIR / "nasaai_debug.log"
+LOG_FILE = BASE_DIR / "dsai_debug.log"
 
 # ── UI ────────────────────────────────────────────────────────────────
 OVERLAY_WIDTH = 480

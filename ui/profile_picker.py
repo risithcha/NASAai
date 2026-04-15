@@ -32,9 +32,8 @@ _ACCENT_YELLOW = "#E0AF68"
 
 # Per-role visual config
 _ROLE_CONFIG: dict[str, dict] = {
-    "Technical Lead": {"emoji": "🔧", "accent": _ACCENT_BLUE},
-    "Mission Lead": {"emoji": "🎯", "accent": _ACCENT_GREEN},
-    "Operations & Business Lead": {"emoji": "📊", "accent": _ACCENT_YELLOW},
+    "Data Analyst": {"emoji": "📊", "accent": _ACCENT_BLUE},
+    "Data Scientist": {"emoji": "🔬", "accent": _ACCENT_GREEN},
 }
 
 
@@ -131,8 +130,8 @@ class ProfilePickerDialog(QDialog):
         return self._selected
 
     def _build_ui(self) -> None:
-        self.setWindowTitle("NASA Meeting Assistant — Sign In")
-        self.setFixedSize(700, 380)
+        self.setWindowTitle("Data Science Presentation Assistant — Sign In")
+        self.setFixedSize(500, 380)
         self.setStyleSheet(f"background-color: {_DARK_BG};")
         self.setWindowFlags(
             Qt.WindowType.Dialog
@@ -144,7 +143,7 @@ class ProfilePickerDialog(QDialog):
         root.setSpacing(20)
 
         # Header
-        title = QLabel("🚀 NASA Meeting Assistant")
+        title = QLabel("📊 Data Science Presentation Assistant")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setStyleSheet(
             f"color: {_TEXT_PRIMARY}; font-size: 22px; font-weight: bold;"
@@ -163,8 +162,8 @@ class ProfilePickerDialog(QDialog):
         cards_row.setSpacing(16)
         cards_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Fixed display order
-        for username in ("risith", "santhosh", "ritvik"):
+        # Fixed display order (only 2 users)
+        for username in ("risith", "santhosh"):
             profile = self._profiles.get(username)
             if profile:
                 card = _UserCard(profile, self._on_select, self)

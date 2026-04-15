@@ -10,6 +10,10 @@ __pycache__/
 # Data (generated)
 data/faiss_index/
 
+# Debug logs
+nasaai_debug.log
+dsai_debug.log
+
 # IDE
 .vscode/
 .idea/

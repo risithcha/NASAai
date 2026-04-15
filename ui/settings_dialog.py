@@ -327,27 +327,10 @@ def _build_audio_tab() -> tuple[_SettingsTab, dict[str, Any]]:
     tab.add_row("Microphone", mic_combo)
     widgets["audio.mic_device"] = mic_combo
 
-    # Loopback device
-    lb_combo = QComboBox()
-    lb_combo.addItem("Auto-detect", "")
-    current_lb = settings.get("audio.loopback_device")
-    for d in devices:
-        if d["is_loopback"]:
-            lb_combo.addItem(d["name"], str(d["index"]))
-    _select_combo_by_data(lb_combo, current_lb)
-    tab.add_row("Loopback (Speakers)", lb_combo)
-    widgets["audio.loopback_device"] = lb_combo
-
     # Refresh button
     refresh_btn = QPushButton("🔄 Refresh Devices")
-    refresh_btn.clicked.connect(lambda: _refresh_audio_devices(mic_combo, lb_combo))
+    refresh_btn.clicked.connect(lambda: _refresh_audio_devices(mic_combo))
     tab.add_widget_row(refresh_btn)
-
-    # AEC
-    aec_cb = QCheckBox()
-    aec_cb.setChecked(settings.get("audio.aec_enabled"))
-    tab.add_row("Echo Cancellation", aec_cb)
-    widgets["audio.aec_enabled"] = aec_cb
 
     # Advanced
     sr_combo = QComboBox()
@@ -365,28 +348,12 @@ def _build_audio_tab() -> tuple[_SettingsTab, dict[str, Any]]:
     tab.add_row("Chunk Size", chunk_spin, advanced=True)
     widgets["audio.chunk_ms"] = chunk_spin
 
-    aec_fl = QSpinBox()
-    aec_fl.setRange(64, 1024)
-    aec_fl.setSingleStep(64)
-    aec_fl.setValue(settings.get("audio.aec_filter_length"))
-    tab.add_row("AEC Filter Length", aec_fl, advanced=True)
-    widgets["audio.aec_filter_length"] = aec_fl
-
-    aec_ss = QDoubleSpinBox()
-    aec_ss.setRange(0.01, 0.50)
-    aec_ss.setSingleStep(0.01)
-    aec_ss.setDecimals(3)
-    aec_ss.setValue(settings.get("audio.aec_step_size"))
-    tab.add_row("AEC Step Size", aec_ss, advanced=True)
-    widgets["audio.aec_step_size"] = aec_ss
-
     return tab, widgets
 
 
-def _refresh_audio_devices(mic_combo: QComboBox, lb_combo: QComboBox) -> None:
+def _refresh_audio_devices(mic_combo: QComboBox) -> None:
     devices = enumerate_audio_devices()
     cur_mic = mic_combo.currentData()
-    cur_lb = lb_combo.currentData()
 
     mic_combo.clear()
     mic_combo.addItem("Auto-detect", "")
@@ -394,13 +361,6 @@ def _refresh_audio_devices(mic_combo: QComboBox, lb_combo: QComboBox) -> None:
         if d["is_input"] and not d["is_loopback"]:
             mic_combo.addItem(d["name"], str(d["index"]))
     _select_combo_by_data(mic_combo, cur_mic)
-
-    lb_combo.clear()
-    lb_combo.addItem("Auto-detect", "")
-    for d in devices:
-        if d["is_loopback"]:
-            lb_combo.addItem(d["name"], str(d["index"]))
-    _select_combo_by_data(lb_combo, cur_lb)
 
 
 def _build_transcription_tab() -> tuple[_SettingsTab, dict[str, Any]]:

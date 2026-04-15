@@ -95,15 +95,11 @@ class Pipeline:
 
     def _on_segment(self, seg: TranscriptSegment) -> None:
         """Called by TranscriptStore on every new segment."""
-        # Log every segment for debugging
-        if seg.channel == 1:
-            log.debug("SEG DROP (mic/ch1): [%s] %s", seg.speaker, seg.text[:80])
-            return
         if not seg.is_utterance_end:
             log.debug("SEG DROP (not utterance_end): [%s] %s", seg.speaker, seg.text[:80])
             return
-        log.info("SEG QUEUED: ch=%d spk=%s utt_end=%s | %s",
-                 seg.channel, seg.speaker, seg.is_utterance_end, seg.text[:100])
+        log.info("SEG QUEUED: spk=%s utt_end=%s | %s",
+                 seg.speaker, seg.is_utterance_end, seg.text[:100])
         with self._lock:
             self._queue.append(seg)
 
@@ -374,8 +370,8 @@ class Pipeline:
             log.debug("KB search for routing failed", exc_info=True)
 
         system = (
-            "You are a meeting routing assistant. Given a question asked during a "
-            "NASA UAS design review and a list of team members with their roles and "
+            "You are a presentation routing assistant. Given a question asked during a "
+            "Data Science project presentation and a list of team members with their roles and "
             "expertise, determine which team member the question is MOST directed at.\n\n"
             "Team members:\n"
             f"{self._team_summary}\n"
@@ -383,11 +379,10 @@ class Pipeline:
             "Rules:\n"
             "- If the question clearly belongs to one member's domain, return their username.\n"
             "- If it is a general/shared question not specific to any one domain, return \"generic\".\n"
-            "- Transcription may contain garbled words (e.g. \"Pixalk\" = \"Pixhawk\", "
-            "\"GST\" = \"GSD\", \"Residt\" = \"Risith\", \"Doshi\" = \"Santhosh\"). "
+            "- Transcription may contain garbled words. "
             "Use context clues to infer the correct term.\n"
             "- Use the project documentation excerpts to accurately match the question "
-            "to whichever team member owns that part of the design.\n"
+            "to whichever team member owns that part of the project.\n"
             "- confidence: 1.0 = absolutely certain, 0.5 = could go either way.\n\n"
             "Respond ONLY with JSON: "
             '{"assigned_to": "<username or generic>", "confidence": <0.0-1.0>}'

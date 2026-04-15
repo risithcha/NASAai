@@ -67,7 +67,7 @@ class OverlayWindow(QWidget):
     # ── build ─────────────────────────────────────────────────────────
 
     def _build_ui(self) -> None:
-        self.setWindowTitle("NASA Meeting Assistant")
+        self.setWindowTitle("Data Science Presentation Assistant")
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
@@ -119,9 +119,9 @@ class OverlayWindow(QWidget):
         if self._user_profile:
             name = self._user_profile.display_name.split()[0]
             role = self._user_profile.role
-            title_text = f"🚀 {name} — {role}"
+            title_text = f"📊 {name} — {role}"
         else:
-            title_text = "🚀 NASA Meeting Assistant"
+            title_text = "📊 Data Science Presentation Assistant"
 
         title = QLabel(title_text)
         title.setStyleSheet(

@@ -1,7 +1,7 @@
 {
   "general.deepgram_api_key": "",
   "general.openai_api_key": "",
-  "general.pdf_path": "C:\\Users\\Risith\\Desktop\\NASAai\\data\\nasa_report.pdf",
+  "general.pdf_path": "",
   "general.log_level": "INFO",
   "general.debug_log_file": true,
   "general.debounce_sec": 3.0,
@@ -10,7 +10,6 @@
   "audio.channels": 1,
   "audio.chunk_ms": 100,
   "audio.encoding": "linear16",
-  "audio.loopback_device": "",
   "audio.mic_device": "",
   "transcription.model": "nova-3",
   "transcription.language": "en",
