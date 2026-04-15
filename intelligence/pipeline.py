@@ -102,8 +102,6 @@ class Pipeline:
                  seg.speaker, seg.is_utterance_end, seg.text[:100])
         with self._lock:
             self._queue.append(seg)
-        with self._lock:
-            self._queue.append(seg)
 
     # ── background worker ─────────────────────────────────────────────
 
