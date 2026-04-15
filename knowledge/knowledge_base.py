@@ -127,7 +127,7 @@ class KnowledgeBase:
         """
         import tiktoken
 
-        enc = tiktoken.encoding_for_model("gpt-4o")
+        enc = tiktoken.get_encoding("cl100k_base")
 
         batches: list[list[str]] = []
         current_batch: list[str] = []

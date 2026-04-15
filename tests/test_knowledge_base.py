@@ -18,7 +18,7 @@ def _fake_encoding():
 @pytest.fixture(autouse=True)
 def _mock_tiktoken():
     """Patch tiktoken so tests don't need a network connection."""
-    with patch("tiktoken.encoding_for_model", return_value=_fake_encoding()):
+    with patch("tiktoken.get_encoding", return_value=_fake_encoding()):
         yield
 
 
