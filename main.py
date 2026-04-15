@@ -1,11 +1,11 @@
 """
-NASA AI Meeting Assistant — main entry point.
+Data Science Presentation Assistant — main entry point.
 
 Startup sequence:
   1. Validate environment (API keys present).
-  2. Build / load the FAISS knowledge base from the PDF.
+  2. Build / load the FAISS knowledge base from the PDF and CSV datasets.
   3. Launch the PyQt6 overlay window.
-  4. Start audio capture → transcription → intelligence pipeline.
+  4. Start microphone capture → transcription → intelligence pipeline.
   5. Run the Qt event loop (blocks until user closes the window).
   6. Tear down all background threads gracefully.
 """
@@ -57,7 +57,7 @@ def _preflight() -> None:
     if not config.PDF_PATH.exists():
         log.warning(
             "PDF not found at %s — knowledge base will be empty.  "
-            "Place your NASA PDF there and re-run.",
+            "Place your Data Science portfolio PDF there and re-run.",
             config.PDF_PATH,
         )
 
@@ -84,7 +84,7 @@ def main() -> None:
     from ui.profile_picker import ProfilePickerDialog
 
     app = QApplication(sys.argv)
-    app.setApplicationName("NASA Meeting Assistant")
+    app.setApplicationName("Data Science Presentation Assistant")
 
     # ── Profile picker ────────────────────────────────────────────────
     profiles = load_profiles()

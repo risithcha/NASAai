@@ -40,11 +40,12 @@ TEXT_SECONDARY = "#565F89"
 TEXT_INTERIM = "#565F89"
 
 SPEAKER_COLOURS: dict[str, str] = {
-    "You": ACCENT_GREEN,
     "Speaker 0": ACCENT_BLUE,
-    "Speaker 1": ACCENT_YELLOW,
-    "Speaker 2": "#BB9AF7",
-    "Speaker 3": "#FF9E64",
+    "Speaker 1": ACCENT_GREEN,
+    "Speaker 2": ACCENT_YELLOW,
+    "Speaker 3": "#BB9AF7",
+    "Speaker 4": "#FF9E64",
+    "Speaker": ACCENT_BLUE,
 }
 
 

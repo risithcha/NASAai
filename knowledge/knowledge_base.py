@@ -1,6 +1,6 @@
 """
 Vector knowledge base: embeds document chunks with OpenAI, indexes with FAISS,
-and provides similarity search.
+and provides similarity search.  Indexes both the PDF portfolio and CSV datasets.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from openai import OpenAI
 
 import config
 from knowledge.pdf_parser import TextChunk, parse_pdf
+from knowledge.csv_parser import parse_csv
 
 log = logging.getLogger(__name__)
 
@@ -38,8 +39,24 @@ class KnowledgeBase:
     # ── build / load ──────────────────────────────────────────────────
 
     def build(self, pdf_path: Path | None = None) -> None:
-        """Parse PDF, embed all chunks, and persist the FAISS index."""
+        """Parse PDF and CSV datasets, embed all chunks, and persist the FAISS index."""
         self._chunks = parse_pdf(pdf_path)
+
+        # Also index CSV datasets from the context directory
+        csv_dir = config.CSV_DIR
+        if csv_dir.exists():
+            for csv_file in sorted(csv_dir.glob("*.csv")):
+                try:
+                    csv_chunks = parse_csv(csv_file)
+                    # Re-number chunk indices to continue from PDF chunks
+                    offset = len(self._chunks)
+                    for i, chunk in enumerate(csv_chunks):
+                        chunk.chunk_index = offset + i
+                    self._chunks.extend(csv_chunks)
+                    log.info("Added %d chunks from %s", len(csv_chunks), csv_file.name)
+                except Exception:
+                    log.warning("Failed to parse CSV %s", csv_file, exc_info=True)
+
         embeddings = self._embed_texts([c.text for c in self._chunks])
         dim = embeddings.shape[1]
 

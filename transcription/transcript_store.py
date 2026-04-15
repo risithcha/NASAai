@@ -14,8 +14,8 @@ from typing import Callable
 class TranscriptSegment:
     """One finalised piece of transcript."""
     text: str
-    speaker: str            # "You" or "Speaker 0", "Speaker 1", …
-    channel: int            # 0 = remote, 1 = mic
+    speaker: str            # "Speaker 0", "Speaker 1", … (via diarization)
+    channel: int            # 0 = mic (single channel)
     is_final: bool = True
     is_utterance_end: bool = False   # True when speech_final closes a full utterance
     timestamp: float = field(default_factory=time.time)
